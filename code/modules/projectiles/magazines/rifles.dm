@@ -483,3 +483,19 @@
 	gun_type = /obj/item/weapon/gun/rifle/rmc_f90/scope
 	max_rounds = 20
 	ammo_band_color = AMMO_BAND_COLOR_AP
+
+//--------------------------------------------------------
+//XM51 BREACHING SHOTGUN
+
+/obj/item/ammo_magazine/rifle/xm51
+	name = "\improper XM51 magazine (16g)"
+	desc = "A 16 gauge pump-action shotgun magazine."
+	icon_state = "xm51"
+	caliber = "16g"
+	w_class = SIZE_MEDIUM
+	default_ammo = /datum/ammo/bullet/shotgun/breaching
+	max_rounds = 12
+	gun_type = /obj/item/weapon/gun/rifle/xm51
+	transfer_handful_amount = 5
+	ammo_band_icon = "+xm51_band"
+	ammo_band_icon_empty = "+xm51_band_e"

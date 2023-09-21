@@ -78,6 +78,16 @@ var/list/shotgun_boxes_12g = list(
 	default_ammo = /datum/ammo/bullet/shotgun/beanbag
 	handful_state = "beanbag_slug"
 	caliber = "20g"
+
+/obj/item/ammo_magazine/shotgun/breaching
+	name = "box of breaching slugs"
+	desc = "A box filled with breaching shotgun shells used for creating entrances. 16 Gauge."
+	icon_state = "breaching"
+	item_state = "breaching"
+	default_ammo = /datum/ammo/bullet/shotgun/breaching
+	handful_state = "breaching_slug"
+	caliber = "16g"
+
 //-------------------------------------------------------
 
 /*
@@ -279,6 +289,14 @@ var/list/shotgun_handfuls_12g = list(
 	gun_type = /obj/item/weapon/gun/shotgun/double/twobore
 	handful_state = "twobore"
 	transfer_handful_amount = 3
+
+/obj/item/ammo_magazine/handful/shotgun/breaching
+	name = "handful of breaching slugs (16g)"
+	icon_state = "breaching_slug_5"
+	handful_state = "breaching_slug"
+	default_ammo = /datum/ammo/bullet/shotgun/breaching
+	caliber = "16g"
+	gun_type = /obj/item/weapon/gun/rifle/xm51
 
 // i fucking hate gun code
 

@@ -2174,6 +2174,30 @@ Defined in conflicts.dm of the #defines folder.
 	pixel_shift_y = 16
 	hud_offset_mod = 10 //A sprite long enough to touch the Moon.
 
+/obj/item/attachable/stock/rifle/xm51
+	name = "xm51 lightweight stock"
+	desc = "The non-detachable stock of a XM-51 breaching shotgun."
+	attach_icon = "xm51_stock"
+	icon_state = "xm51_stock"
+	pixel_shift_x = 41
+	pixel_shift_y = 10
+	flags_attach_features = NO_FLAGS
+	hud_offset_mod = 6
+
+/obj/item/attachable/stock/hg3712/New()
+	..()
+
+	//HG stock is purely aesthetics, any changes should be done to the gun itself
+	accuracy_mod = 0
+	recoil_mod = 0
+	scatter_mod = 0
+	movement_onehanded_acc_penalty_mod = 0
+	accuracy_unwielded_mod = 0
+	recoil_unwielded_mod = 0
+	scatter_unwielded_mod = 0
+	aim_speed_mod = 0
+	wield_delay_mod = WIELD_DELAY_NONE
+
 /obj/item/attachable/m4ra_barrel
 	name = "M4RA barrel"
 	desc = "This isn't supposed to be seperated from the gun, how'd this happen?"

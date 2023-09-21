@@ -1127,6 +1127,17 @@
 			to_chat(living_mob, SPAN_HIGHDANGER("The impact knocks you off-balance!"))
 		living_mob.apply_stamina_damage(fired_projectile.ammo.damage, fired_projectile.def_zone, ARMOR_BULLET)
 
+/datum/ammo/bullet/shotgun/breaching
+	name = "breaching slug"
+	handful_state = "breaching_slug"
+
+	accurate_range = 4
+	max_range = 6
+	damage = 35
+	penetration = ARMOR_PENETRATION_TIER_2
+	damage_armor_punch = 2
+	handful_state = "breaching_slug"
+
 /datum/ammo/bullet/shotgun/beanbag
 	name = "beanbag slug"
 	headshot_state = HEADSHOT_OVERLAY_LIGHT //It's not meant to kill people... but if you put it in your mouth, it will.

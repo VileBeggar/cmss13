@@ -1864,3 +1864,81 @@
 	f90_shotgun_barrel.Attach(src)
 	update_attachable(f90_shotgun.slot)
 	update_attachable(f90_shotgun_barrel.slot)
+
+//-------------------------------------------------------
+//XM51 BREACHING SHOTGUN
+
+/obj/item/weapon/gun/rifle/xm51
+	name = "XM51 breaching shotgun"
+	desc = "An ARMAT manufactured pump-action shotgun designed for quickly creating entrances. This experimental model exclusively uses specialized 16 gauge shells designed to inflict maximum damage to structures, at the cost of low damage to soft targets."
+	reload_sound = 'sound/weapons/gun_rifle_reload.ogg'
+	cocked_sound = 'sound/weapons/gun_shotgun_reload.ogg'
+	fire_sound = 'sound/weapons/gun_shotgun_u7.ogg'
+	icon_state = "xm51"
+	item_state = "xm51"
+	var/message_cooldown //To reduce message spam.
+
+	current_mag = /obj/item/ammo_magazine/rifle/xm51
+	starting_attachment_types = list(/obj/item/attachable/stock/rifle/xm51)
+	attachable_allowed = list(
+		/obj/item/attachable/bayonet,
+		/obj/item/attachable/bayonet/upp,
+		/obj/item/attachable/bayonet/co2,
+		/obj/item/attachable/reddot,
+		/obj/item/attachable/reflex,
+		/obj/item/attachable/verticalgrip,
+		/obj/item/attachable/angledgrip,
+		/obj/item/attachable/flashlight/grip,
+		/obj/item/attachable/flashlight,
+		/obj/item/attachable/magnetic_harness,
+		/obj/item/attachable/stock/rifle/xm51
+	)
+	flags_equip_slot = SLOT_BACK|SLOT_WAIST
+	flags_gun_features = GUN_AUTO_EJECTOR|GUN_CAN_POINTBLANK|GUN_AMMO_COUNTER
+	gun_category = GUN_CATEGORY_SHOTGUN
+	aim_slowdown = SLOWDOWN_ADS_SHOTGUN
+
+/obj/item/weapon/gun/rifle/xm51/set_gun_attachment_offsets()
+	attachable_offset = list("muzzle_x" = 34, "muzzle_y" = 18, "rail_x" = 12, "rail_y" = 21, "under_x" = 24, "under_y" = 13, "stock_x" = 26, "stock_y" = 12)
+
+/obj/item/weapon/gun/rifle/xm51/set_gun_config_values()
+	..()
+	set_fire_delay(FIRE_DELAY_TIER_5)
+	set_burst_amount(BURST_AMOUNT_TIER_1)
+	cock_delay = FIRE_DELAY_TIER_5*2
+	accuracy_mult = BASE_ACCURACY_MULT
+	accuracy_mult_unwielded = BASE_ACCURACY_MULT - HIT_ACCURACY_MULT_TIER_7
+	scatter = SCATTER_AMOUNT_TIER_6
+	scatter_unwielded = SCATTER_AMOUNT_TIER_2
+	damage_mult = BASE_BULLET_DAMAGE_MULT
+	recoil_unwielded = RECOIL_AMOUNT_TIER_2
+
+/obj/item/weapon/gun/rifle/xm51/set_bullet_traits()
+	LAZYADD(traits_to_give, list(
+		BULLET_TRAIT_ENTRY_ID("turfs", /datum/element/bullet_trait_damage_boost, 15, GLOB.damage_boost_turfs),
+		BULLET_TRAIT_ENTRY_ID("breaching", /datum/element/bullet_trait_damage_boost, 25.8, GLOB.damage_boost_breaching),
+		BULLET_TRAIT_ENTRY_ID("pylons", /datum/element/bullet_trait_damage_boost, 15, GLOB.damage_boost_pylons)
+	))
+
+/obj/item/weapon/gun/rifle/xm51/load_into_chamber(mob/user)
+	return in_chamber
+
+/obj/item/weapon/gun/rifle/xm51/reload_into_chamber(mob/user)
+	return
+
+/obj/item/weapon/gun/rifle/xm51/cock(mob/user)
+	return
+
+/obj/item/weapon/gun/rifle/xm51/unique_action(mob/user)
+	if(world.time < (cock_cooldown + cock_delay))
+		return
+	if(in_chamber)
+		if (world.time > (message_cooldown + cock_delay))
+			to_chat(usr, SPAN_WARNING("<i>[src] already has a shell in the chamber!<i>"))
+			message_cooldown = world.time
+		return
+
+	cock_gun(user)
+	cock_cooldown = world.time + cock_delay
+	ready_in_chamber()
+	display_ammo(user)
