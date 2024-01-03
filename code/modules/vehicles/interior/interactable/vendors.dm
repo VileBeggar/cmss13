@@ -227,6 +227,7 @@
 		list("EXTENDED AMMUNITION", -1, null, null),
 		list("M39 Extended Magazine (10x20mm)", 0, /obj/item/ammo_magazine/smg/m39/extended, VENDOR_ITEM_REGULAR),
 		list("M41A MK2 Extended Magazine (10x24mm)", 0, /obj/item/ammo_magazine/rifle/extended, VENDOR_ITEM_REGULAR),
+		list("M4RA Extended Magazine (10x24mm)", 0, /obj/item/ammo_magazine/rifle/m4ra/ext, VENDOR_ITEM_REGULAR),
 
 		list("SPECIALIST AMMUNITION", -1, null, null),
 		list("A19 High Velocity Impact Magazine (10x24mm)", 0, /obj/item/ammo_magazine/rifle/m4ra/custom/impact, VENDOR_ITEM_REGULAR),
