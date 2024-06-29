@@ -248,9 +248,10 @@
 
 		if(INTENT_HELP)
 			if (health > 0)
+				playsound(src, 'sound/weapons/thudswoosh.ogg', 25, 1, 5)
 				for(var/mob/O in viewers(src, null))
 					if ((O.client && !( O.blinded )))
-						O.show_message(SPAN_NOTICE("[M] [response_help] [src]"), SHOW_MESSAGE_VISIBLE)
+						O.show_message(SPAN_NOTICE("[M] [response_help] [src]."), SHOW_MESSAGE_VISIBLE)
 
 		if(INTENT_GRAB)
 			if(M == src || anchored)
@@ -259,11 +260,26 @@
 
 			return 1
 
-		if(INTENT_HARM, INTENT_DISARM)
+		if(INTENT_DISARM)
+			M.animation_attack_on(src)
+			M.flick_attack_overlay(src, "disarm")
+			playsound(src, 'sound/weapons/thudswoosh.ogg', 25, 1, 5)
+			for(var/mob/O in viewers(src, null))
+				if ((O.client && !( O.blinded )))
+					O.show_message(SPAN_DANGER("[M] [response_disarm] [src]."), SHOW_MESSAGE_VISIBLE)
+
+		if(INTENT_HARM)
+			M.animation_attack_on(src)
+			if(!isxeno(M))
+				M.flick_attack_overlay(src, "punch")
+				playsound(src, get_sfx("punch"), 25, 1, 5)
+			else
+				M.flick_attack_overlay(src, "slash")
+				playsound(src, get_sfx("alien_claw_flesh"), 25, 1, 5)
 			apply_damage(harm_intent_damage, BRUTE)
 			for(var/mob/O in viewers(src, null))
 				if ((O.client && !( O.blinded )))
-					O.show_message(SPAN_DANGER("[M] [response_harm] [src]"), SHOW_MESSAGE_VISIBLE)
+					O.show_message(SPAN_DANGER("[M] [response_harm] [src]."), SHOW_MESSAGE_VISIBLE)
 
 	return
 
