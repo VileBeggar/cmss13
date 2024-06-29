@@ -8,6 +8,8 @@
 	mob_size = MOB_SIZE_SMALL
 	pixel_x = -16  //Needed for 2x2
 	old_x = -16
+	base_pixel_x = 0
+	base_pixel_y = -20
 	health = 200
 	maxHealth = 200
 
@@ -30,15 +32,16 @@
 	COOLDOWN_DECLARE(pounce_cooldown)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/Initialize()
-	pain.feels_pain = FALSE // Stops it from suddenly dying due to paincrit.
+	. = ..()
+	pain.ignore_oxyloss_checks = TRUE
 	pounce_callbacks = list()
 	pounce_callbacks[/mob] = DYNAMIC(/mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_mob_wrapper)
 	pounce_callbacks[/turf] = DYNAMIC(/mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_turf_wrapper)
-	. = ..()
+
 
 /mob/living/simple_animal/hostile/retaliate/jagras/attack_hand(mob/living/carbon/human/attacking_mob as mob)
 	if(attacking_mob.a_intent == INTENT_DISARM && stat != DEAD)
-		update_aggression(15)
+		aggression_value = update_value_clamped(aggression_value, 15)
 
 		if(COOLDOWN_FINISHED(src, growl_message))
 			INVOKE_ASYNC(src, PROC_REF(manual_emote), "growls at [attacking_mob].", 1)
@@ -48,10 +51,14 @@
 			playsound(loc, 'sound/weapons/alien_knockdown.ogg', 25, 1)
 			KnockDown(1)
 			update_transform(TRUE)
-			update_aggression(45)
+			aggression_value = update_value_clamped(aggression_value, 45)
 
 	if(attacking_mob.a_intent == INTENT_HELP && stance == HOSTILE_STANCE_IDLE)
-		update_aggression(-10)
+		update_value_clamped(aggression_value, -10)
+		if(resting)
+			chance_to_rest = update_value_clamped(chance_to_rest, -5)
+		else
+			chance_to_rest = update_value_clamped(chance_to_rest, 5)
 
 	..()
 
@@ -93,7 +100,7 @@
 			LoseTarget()
 
 		if(stance == HOSTILE_STANCE_IDLE)
-			chance_to_rest += 5
+			chance_to_rest = update_value_clamped(chance_to_rest, 5)
 			if(prob(chance_to_rest))
 				chance_to_rest = 0
 				lay_down()
@@ -105,25 +112,27 @@
 	if(!client && aggression_value >= 100 && stance == HOSTILE_STANCE_IDLE)
 		INVOKE_ASYNC(src, PROC_REF(manual_emote), "snarls!", 1)
 		Retaliate()
-	update_aggression(-10)
+	aggression_value = update_value_clamped(aggression_value, -10)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/adjustBruteLoss(damage)
 	..()
-	update_aggression(80)
+	aggression_value = update_value_clamped(aggression_value, 80)
 
-/mob/living/simple_animal/hostile/retaliate/jagras/proc/update_aggression(value)
-	aggression_value += value
-	aggression_value = clamp(aggression_value, 0, 100)
+/mob/living/simple_animal/hostile/retaliate/jagras/proc/update_value_clamped(variable, value)
+	variable += value
+	variable = clamp(variable, 0, 100)
+	return variable
 
 /mob/living/simple_animal/hostile/retaliate/jagras/AttackingTarget()
-	update_aggression(25) // Bloodlust. Make sure they don't stop in the middle of slashing someone apart.
+	aggression_value = update_value_clamped(aggression_value, 25) // Bloodlust. Make sure they don't stop in the middle of slashing someone apart.
 	. = ..()
 
 /mob/living/simple_animal/hostile/retaliate/jagras/bullet_act(obj/projectile/bullet)
 	. = ..()
 	if(bullet.damage)
 		var/splatter_dir = get_dir(bullet.starting, loc)
-		new /obj/effect/temp_visual/dir_setting/bloodsplatter(loc, splatter_dir)
+		var/obj/effect/temp_visual/dir_setting/bloodsplatter/splatter_effect = new(loc, splatter_dir)
+		splatter_effect.pixel_y -= 20
 
 
 // POUNCE PROCS //
@@ -131,7 +140,7 @@
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/pounce(mob/living/target)
 	var/pounce_distance = clamp((get_dist(src, target)), 1, 5)
 	INVOKE_ASYNC(src, PROC_REF(manual_emote), "pounces at [target]!", 1)
-	src.throw_atom(target, pounce_distance, SPEED_FAST, src, pass_flags = PASS_OVER_THROW_MOB, collision_callbacks = pounce_callbacks)
+	INVOKE_ASYNC(src, TYPE_PROC_REF(/atom/movable, throw_atom), target, pounce_distance, SPEED_FAST, src, null, LOW_LAUNCH, PASS_OVER_THROW_MOB, null, pounce_callbacks)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_mob_wrapper(mob/living/pounced_mob)
 	pounced_mob(pounced_mob)

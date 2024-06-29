@@ -66,6 +66,7 @@
 	var/level_updating = FALSE
 
 	var/feels_pain = TRUE
+	var/ignore_oxyloss_checks = FALSE
 
 /datum/pain/New(mob/owner)
 	. = ..()
@@ -193,7 +194,7 @@
 			if(!isnull(threshold_horrible))
 				activate_horrible()
 
-	if(new_level >= PAIN_LEVEL_SEVERE)
+	if(new_level >= PAIN_LEVEL_SEVERE && !ignore_oxyloss_checks)
 		RegisterSignal(source_mob, COMSIG_MOB_DRAGGED, PROC_REF(oxyloss_drag), override = TRUE)
 		RegisterSignal(source_mob, COMSIG_MOB_DEVOURED, PROC_REF(handle_devour), override = TRUE)
 		RegisterSignal(source_mob, COMSIG_MOVABLE_PRE_THROW, PROC_REF(oxy_kill), override = TRUE)
