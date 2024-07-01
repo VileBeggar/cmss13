@@ -15,7 +15,7 @@
 
 	speak_emote = list("roars", "growls", "hisses")
 	emote_see = list("wags its tail.", "shakes its head.")
-	speak_chance = 5
+	speak_chance = 1
 	mobility_flags = MOBILITY_FLAGS_REST_CAPABLE_DEFAULT
 
 	response_help = "pets"
@@ -28,20 +28,20 @@
 	var/aggression_value = 0
 	var/chance_to_rest = 0
 	var/trying_to_eat = FALSE
-	var/list/friendly_factions = list()
 	var/obj/item/reagent_container/food/snacks/meat/snack_target = null
-	var/list/pounce_callbacks = null
+	var/list/pounce_callbacks = list()
 	var/mob/living/carbon/intruding_mob
 	COOLDOWN_DECLARE(growl_message)
 	COOLDOWN_DECLARE(pounce_cooldown)
 	COOLDOWN_DECLARE(snack_cooldown)
+	COOLDOWN_DECLARE(calm_cooldown)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/Initialize()
 	. = ..()
 	pain.ignore_oxyloss_checks = TRUE //Stops it from dying mid-lunge when suffering from intense pain.
-	pounce_callbacks = list()
 	pounce_callbacks[/mob] = DYNAMIC(/mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_mob_wrapper)
 	pounce_callbacks[/turf] = DYNAMIC(/mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_turf_wrapper)
+	pounce_callbacks[/obj] = DYNAMIC(/mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_obj_wrapper)
 
 
 /mob/living/simple_animal/hostile/retaliate/jagras/attack_hand(mob/living/carbon/human/attacking_mob as mob)
@@ -49,9 +49,7 @@
 		aggression_value = update_value_clamped(aggression_value, 15)
 
 		if(COOLDOWN_FINISHED(src, growl_message) && aggression_value < 80)
-			playsound(loc, 'sound/voice/jagras_growl.ogg', 33, 1)
-			INVOKE_ASYNC(src, PROC_REF(manual_emote), "growls at [attacking_mob].", 1)
-			COOLDOWN_START(src, growl_message, 10 SECONDS)
+			growl(attacking_mob)
 
 		if(prob(33))
 			playsound(loc, 'sound/weapons/alien_knockdown.ogg', 25, 1)
@@ -69,7 +67,7 @@
 	..()
 
 /mob/living/simple_animal/hostile/retaliate/jagras/Retaliate()
-	if(stat ==  DEAD)
+	if(stat == DEAD)
 		return
 
 	. = ..()
@@ -104,16 +102,28 @@
 	. = ..()
 	update_transform()
 
+/mob/living/simple_animal/hostile/retaliate/jagras/Move()
+	if(!HAS_TRAIT(src, TRAIT_INCAPACITATED) && !HAS_TRAIT(src, TRAIT_FLOORED) && icon_state == "Jagras Knocked Down")
+		icon_state = "Jagras"
+	. = ..()
+
 /mob/living/simple_animal/hostile/retaliate/jagras/Life(delta_time)
 	if(!client)
+		if(stance == HOSTILE_STANCE_ATTACKING)
+			trying_to_eat = FALSE
+
+		if(resting)
+			health += maxHealth / 20
+
 		//Once enough time passes without being hurt, stop chasing and become netural again.
 		if(aggression_value == 0 && stance == HOSTILE_STANCE_ATTACKING)
 			INVOKE_ASYNC(src, PROC_REF(manual_emote), "calms down.", 1)
+			COOLDOWN_START(src, calm_cooldown, 3 SECONDS)
 			enemies = new()
 			LoseTarget()
 
 		if(COOLDOWN_FINISHED(src, snack_cooldown) && stance <= HOSTILE_STANCE_ALERT && !snack_target)
-			for(var/obj/item/reagent_container/food/snacks/meat/snack in oview(5, src))
+			for(var/obj/item/reagent_container/food/snacks/snack in oview(5, src))
 				stop_automated_movement = TRUE
 				snack_target = snack
 				trying_to_eat = TRUE
@@ -126,33 +136,33 @@
 				break
 
 		if(snack_target)
-			if(!isturf(snack_target.loc))
-				aggression_value = update_value_clamped(aggression_value, 50)
-				if(aggression_value < 80)
-					INVOKE_ASYNC(src, PROC_REF(manual_emote), "looks angrily at [snack_target.loc].", 1)
-				stop_moving()
-				stop_automated_movement = FALSE
-				snack_target = null
+			check_if_food_taken()
 			if(Adjacent(snack_target))
-				eat_food(snack_target)
+				INVOKE_ASYNC(src, PROC_REF(eat_food))
+
+		if(aggression_value >= 80 && stance < HOSTILE_STANCE_ATTACK)
+			INVOKE_ASYNC(src, PROC_REF(manual_emote), "snarls!", 1)
+			Retaliate()
 
 		for(intruding_mob in oview(5, src))
-			if(stance > HOSTILE_STANCE_ALERT || trying_to_eat || friends.Find(intruding_mob) || friendly_factions.Find(intruding_mob.faction))
+			if(!COOLDOWN_FINISHED(src, calm_cooldown) || stance > HOSTILE_STANCE_ALERT || trying_to_eat)
 				break
+			if(friends.Find(intruding_mob) || friendly_factions.Find(intruding_mob.faction))
+				continue
 			if(body_position == LYING_DOWN)
 				lay_down()
+
+			if(get_dist(src, intruding_mob) <= 3)
+				growl(intruding_mob)
+
 			if(stance < HOSTILE_STANCE_ALERT)
 				stance = HOSTILE_STANCE_ALERT
 				walk_to(src, 0)
 				stop_automated_movement = TRUE
-				INVOKE_ASYNC(src, PROC_REF(manual_emote), "stares at [intruding_mob].", 1)
+				if(COOLDOWN_FINISHED(src, growl_message))
+					INVOKE_ASYNC(src, PROC_REF(manual_emote), "stares at [intruding_mob].", 1)
 
 			setDir(get_dir(src, intruding_mob))
-
-			if(get_dist(src, intruding_mob) <= 3 && COOLDOWN_FINISHED(src, growl_message))
-				playsound(loc, 'sound/voice/jagras_growl.ogg', 33, 1)
-				INVOKE_ASYNC(src, PROC_REF(manual_emote), "growls at [intruding_mob].", 1)
-				COOLDOWN_START(src, growl_message, 10 SECONDS)
 
 			if(get_dist(src, intruding_mob) <= 1)
 				aggression_value = update_value_clamped(aggression_value, 100)
@@ -169,48 +179,78 @@
 
 	. = ..()
 
-	if(!client && target_mob && stance == HOSTILE_STANCE_ATTACKING && prob(75) && COOLDOWN_FINISHED(src, pounce_cooldown))
-		pounce(target_mob)
-		COOLDOWN_START(src, pounce_cooldown, 4 SECONDS)
-	if(!client && aggression_value >= 80 && stance < HOSTILE_STANCE_ATTACK)
-		INVOKE_ASYNC(src, PROC_REF(manual_emote), "snarls!", 1)
-		Retaliate()
-	aggression_value = update_value_clamped(aggression_value, -10)
+	if(!client)
+		if(target_mob && stance == HOSTILE_STANCE_ATTACKING && prob(75) && COOLDOWN_FINISHED(src, pounce_cooldown))
+			pounce(target_mob)
+			COOLDOWN_START(src, pounce_cooldown, 4 SECONDS)
 
-	if(!intruding_mob && stance <= HOSTILE_STANCE_ALERT)
-		stance = HOSTILE_STANCE_IDLE
-		stop_automated_movement = FALSE
+		aggression_value = update_value_clamped(aggression_value, -10)
 
-/mob/living/simple_animal/hostile/retaliate/jagras/proc/eat_food(food)
-	playsound(loc, 'sound/items/eatfood.ogg', 35, 1)
+		if(!intruding_mob && stance <= HOSTILE_STANCE_ALERT)
+			stance = HOSTILE_STANCE_IDLE
+			stop_automated_movement = FALSE
+
+/mob/living/simple_animal/hostile/retaliate/jagras/proc/eat_food()
+	setDir(get_dir(src, snack_target))
 	INVOKE_ASYNC(src, PROC_REF(manual_emote), "gnaws on [snack_target].", 1)
-	snack_target = null
+	playsound(loc, 'sound/items/eatfood.ogg', 35, 1)
+	sleep(2 SECONDS)
+
+	if(!Adjacent(snack_target) || !isturf(snack_target.loc))
+		check_if_food_taken()
+		return
+
+	playsound(loc, 'sound/items/eatfood.ogg', 35, 1)
+	qdel(snack_target)
 	stance = HOSTILE_STANCE_IDLE
 	stop_automated_movement = FALSE
 	trying_to_eat = FALSE
-	chance_to_rest = update_value_clamped(chance_to_rest, 10)
-	qdel(food)
+	chance_to_rest = update_value_clamped(chance_to_rest, 15)
+	snack_target = null
 	for(intruding_mob in oview(5, src))
 		if(isxeno(intruding_mob))
 			break
-		friends += intruding_mob
-		friendly_factions += intruding_mob.faction
+		if(!friendly_factions.Find(intruding_mob.faction))
+			friendly_factions += intruding_mob.faction
+		playsound(loc, 'sound/voice/jagras_hiss1.ogg', 35)
 		INVOKE_ASYNC(src, PROC_REF(manual_emote), "hisses happily at [intruding_mob].", 1)
 		break
 	COOLDOWN_START(src, snack_cooldown, 20 SECONDS)
+
+/mob/living/simple_animal/hostile/retaliate/jagras/proc/check_if_food_taken()
+	if(!isturf(snack_target.loc))
+		var/mob/living/friend = snack_target.loc
+		if(ishuman(friend) && friendly_factions.Find(friend.faction))
+			INVOKE_ASYNC(src, PROC_REF(manual_emote), "looks pleadingly at [friend]...", 1)
+			setDir(get_dir(src, friend))
+		else
+			aggression_value = update_value_clamped(aggression_value, 50)
+			if(aggression_value < 80)
+				INVOKE_ASYNC(src, PROC_REF(manual_emote), "looks angrily at [snack_target.loc].", 1)
+				COOLDOWN_START(src, calm_cooldown, 3 SECONDS)
+		stop_moving()
+		stop_automated_movement = FALSE
+		snack_target = null
+		trying_to_eat = FALSE
+		COOLDOWN_START(src, snack_cooldown, 5 SECONDS)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/adjustBruteLoss(damage)
 	..()
 	aggression_value = update_value_clamped(aggression_value, 50)
 
+/mob/living/simple_animal/hostile/retaliate/jagras/proc/growl(target)
+	if(COOLDOWN_FINISHED(src, growl_message))
+		playsound(loc, 'sound/voice/jagras_growl.ogg', 45, 1)
+		COOLDOWN_START(src, growl_message, 8 SECONDS)
+		if(target)
+			INVOKE_ASYNC(src, PROC_REF(manual_emote), "growls at [target]!", 1)
+		else
+			INVOKE_ASYNC(src, PROC_REF(manual_emote), "growls!", 1)
+
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/update_value_clamped(variable, value)
 	variable += value
 	variable = clamp(variable, 0, 100)
 	return variable
-
-/mob/living/simple_animal/hostile/retaliate/jagras/AttackingTarget()
-	aggression_value = update_value_clamped(aggression_value, 25) // Bloodlust. Make sure they don't stop in the middle of slashing someone apart.
-	. = ..()
 
 /mob/living/simple_animal/hostile/retaliate/jagras/bullet_act(obj/projectile/bullet)
 	. = ..()
@@ -281,3 +321,17 @@
 
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_turf_wrapper(turf/turf_target)
 	pounced_turf(turf_target)
+
+
+/mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_obj_wrapper(obj/O)
+	pounced_obj(O)
+
+
+/mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_obj(obj/O)
+	// Unconscious or dead, or not throwing but used pounce
+	if(!check_state() || (!throwing && !pounceAction.action_cooldown_check()))
+		obj_launch_collision(O)
+		return
+
+	if(!istype(O, /obj/structure/surface/table) && !istype(O, /obj/structure/surface/rack))
+		O.hitby(src) //This resets throwing.

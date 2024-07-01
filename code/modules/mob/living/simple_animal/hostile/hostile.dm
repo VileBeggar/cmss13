@@ -10,6 +10,7 @@
 	var/casingtype
 	var/move_to_delay = 4 //delay for the automated movement.
 	var/list/friends = list()
+	var/list/friendly_factions = list()
 	var/break_stuff_probability = 10
 	stop_automated_movement_when_pulled = 0
 	black_market_value = KILL_MENDOZA
@@ -51,7 +52,7 @@
 	return T
 
 /mob/living/simple_animal/hostile/proc/evaluate_target(mob/living/target)
-	if(target.faction == src.faction && !attack_same)
+	if((target.faction == src.faction && !attack_same) || (friendly_factions.Find(target.faction) && !attack_same))
 		return FALSE
 	else if(target in friends)
 		return FALSE
