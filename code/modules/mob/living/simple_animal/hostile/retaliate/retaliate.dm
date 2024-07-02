@@ -27,7 +27,7 @@
 			continue
 		if(isliving(A))
 			var/mob/living/M = A
-			if(!attack_same && M.faction != faction)
+			if(!attack_same && M.faction != faction || (friendly_factions.Find(M.faction) && !attack_same))
 				enemies |= M
 
 	for(var/mob/living/simple_animal/hostile/retaliate/H in around)

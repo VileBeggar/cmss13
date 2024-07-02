@@ -10,8 +10,8 @@
 	old_x = -16
 	base_pixel_x = 0
 	base_pixel_y = -20
-	health = 200
-	maxHealth = 200
+	health = 450
+	maxHealth = 450
 
 	speak_emote = list("roars", "growls", "hisses")
 	emote_see = list("wags its tail.", "shakes its head.")
@@ -25,15 +25,26 @@
 	melee_damage_lower = 20
 	melee_damage_upper = 25
 	attacktext = "bites"
+	move_to_delay = 2.25
+
+	var/is_fleeing = FALSE
+	var/is_ravaging = FALSE
 	var/aggression_value = 0
+	///The mob's chance (%) to rest/get up when randomly wandering.
 	var/chance_to_rest = 0
-	var/trying_to_eat = FALSE
+	///The food item that the mob is targetting.
 	var/obj/item/reagent_container/food/snacks/meat/snack_target = null
+	///Collision callbacks for the pounce proc.
 	var/list/pounce_callbacks = list()
+	///Every other mob that's within a certain radius of the current mob.
 	var/mob/living/carbon/intruding_mob
+	///Cooldown for the "growls at [target]!" message.
 	COOLDOWN_DECLARE(growl_message)
+	///Cooldown for the pounce ability.
 	COOLDOWN_DECLARE(pounce_cooldown)
+	///Cooldown for being able to eat food.
 	COOLDOWN_DECLARE(snack_cooldown)
+	///Short cooldown that will disable hostile actions for the mob, allowing other entities to get themselves to a safe distance.
 	COOLDOWN_DECLARE(calm_cooldown)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/Initialize()
@@ -57,7 +68,7 @@
 			update_transform(TRUE)
 			aggression_value = update_value_clamped(aggression_value, 45)
 
-	if(attacking_mob.a_intent == INTENT_HELP && stance == HOSTILE_STANCE_IDLE)
+	if(attacking_mob.a_intent == INTENT_HELP && stance == HOSTILE_STANCE_IDLE && friendly_factions.Find(attacking_mob.faction))
 		update_value_clamped(aggression_value, -10)
 		if(resting)
 			chance_to_rest = update_value_clamped(chance_to_rest, -5)
@@ -67,24 +78,22 @@
 	..()
 
 /mob/living/simple_animal/hostile/retaliate/jagras/Retaliate()
-	if(stat == DEAD)
+	if(stat == DEAD || is_fleeing)
 		return
 
 	. = ..()
 	if(!HAS_TRAIT(src, TRAIT_INCAPACITATED) && !HAS_TRAIT(src, TRAIT_FLOORED))
 		//If resting, get up.
 		if(body_position == LYING_DOWN)
-			clear_stun()
+			chance_to_rest = 0
+			resting = FALSE
+			set_body_position(STANDING_UP)
+			update_transform(TRUE)
 		// Immediately start attacking.
 		if(mobility_flags & MOBILITY_MOVE)
 			target_mob = FindTarget()
 			MoveToTarget()
 
-/mob/living/simple_animal/hostile/retaliate/jagras/proc/clear_stun()
-	chance_to_rest = 0
-	resting = FALSE
-	set_body_position(STANDING_UP)
-	update_transform(TRUE)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/update_transform(instant_update = TRUE)
 	if(stat == DEAD)
@@ -102,31 +111,95 @@
 	. = ..()
 	update_transform()
 
-/mob/living/simple_animal/hostile/retaliate/jagras/Move()
-	if(!HAS_TRAIT(src, TRAIT_INCAPACITATED) && !HAS_TRAIT(src, TRAIT_FLOORED) && icon_state == "Jagras Knocked Down")
-		icon_state = "Jagras"
+/mob/living/simple_animal/hostile/retaliate/jagras/on_floored_start()
 	. = ..()
+	update_transform()
+
+/mob/living/simple_animal/hostile/retaliate/jagras/on_floored_end()
+	. = ..()
+	update_transform()
+
+/mob/living/simple_animal/hostile/retaliate/jagras/on_incapacitated_trait_gain()
+	. = ..()
+	update_transform()
+
+/mob/living/simple_animal/hostile/retaliate/jagras/on_incapacitated_trait_loss()
+	. = ..()
+	update_transform()
+
+/mob/living/simple_animal/hostile/retaliate/jagras/on_knockedout_trait_gain()
+	. = ..()
+	update_transform()
+
+/mob/living/simple_animal/hostile/retaliate/jagras/on_knockedout_trait_loss()
+	. = ..()
+	update_transform()
+
+/mob/living/simple_animal/hostile/retaliate/jagras/proc/disengage(length, distance, return_to_combat, no_message = FALSE)
+	is_fleeing = TRUE
+	stance = HOSTILE_STANCE_ALERT
+	stop_automated_movement = TRUE
+	if(!no_message)
+		INVOKE_ASYNC(src, PROC_REF(manual_emote), "tries to disengage!", 1)
+	move_to_delay = 2
+	COOLDOWN_START(src, calm_cooldown, length + 4 SECONDS)
+	COOLDOWN_START(src, snack_cooldown, length + 6 SECONDS)
+	walk_away(src, target_mob, distance, move_to_delay)
+	if(!return_to_combat)
+		enemies = new()
+		target_mob = null
+
+	sleep(length)
+
+	//If there are still enemies in view, keep retreating.
+	if(!return_to_combat)
+		for(intruding_mob in oview(7, src))
+			if(friends.Find(intruding_mob) || friendly_factions.Find(intruding_mob.faction))
+				continue
+			disengage(length, distance, return_to_combat, no_message)
+			break
+
+	stop_moving()
+	move_to_delay = 2.25
+	stop_automated_movement = FALSE
+	is_fleeing = FALSE
+	if(return_to_combat)
+		MoveToTarget()
+
+/mob/living/simple_animal/hostile/retaliate/jagras/stop_moving()
+	walk_to(src, 0)
+
+//Do not stop hunting targets even if they're not visible anymore.
+/mob/living/simple_animal/hostile/retaliate/jagras/ListTargets(dist = 9)
+	if(!enemies.len)
+		return list()
+	var/list/see = orange(src, dist)
+	see &= enemies
+	return see
 
 /mob/living/simple_animal/hostile/retaliate/jagras/Life(delta_time)
 	if(!client)
 		if(stance == HOSTILE_STANCE_ATTACKING)
-			trying_to_eat = FALSE
+			snack_target = null
 
 		if(resting)
 			health += maxHealth / 20
 
+		if(stance >= HOSTILE_STANCE_ATTACK && health < maxHealth * 0.5 && !is_fleeing)
+			INVOKE_ASYNC(src, PROC_REF(disengage), 10 SECONDS, 14, FALSE)
+
 		//Once enough time passes without being hurt, stop chasing and become netural again.
-		if(aggression_value == 0 && stance == HOSTILE_STANCE_ATTACKING)
+		if(aggression_value == 0 && stance == HOSTILE_STANCE_ATTACKING && COOLDOWN_FINISHED(src, calm_cooldown))
 			INVOKE_ASYNC(src, PROC_REF(manual_emote), "calms down.", 1)
 			COOLDOWN_START(src, calm_cooldown, 3 SECONDS)
+			COOLDOWN_START(src, snack_cooldown, 6 SECONDS)
 			enemies = new()
 			LoseTarget()
 
-		if(COOLDOWN_FINISHED(src, snack_cooldown) && stance <= HOSTILE_STANCE_ALERT && !snack_target)
+		if(COOLDOWN_FINISHED(src, snack_cooldown) && stance <= HOSTILE_STANCE_ALERT && !snack_target && !is_fleeing)
 			for(var/obj/item/reagent_container/food/snacks/snack in oview(5, src))
 				stop_automated_movement = TRUE
 				snack_target = snack
-				trying_to_eat = TRUE
 				stance = HOSTILE_STANCE_ALERT
 				if(body_position == LYING_DOWN)
 					lay_down()
@@ -140,12 +213,12 @@
 			if(Adjacent(snack_target))
 				INVOKE_ASYNC(src, PROC_REF(eat_food))
 
-		if(aggression_value >= 80 && stance < HOSTILE_STANCE_ATTACK)
+		if(aggression_value >= 80 && !target_mob && !is_fleeing)
 			INVOKE_ASYNC(src, PROC_REF(manual_emote), "snarls!", 1)
 			Retaliate()
 
 		for(intruding_mob in oview(5, src))
-			if(!COOLDOWN_FINISHED(src, calm_cooldown) || stance > HOSTILE_STANCE_ALERT || trying_to_eat)
+			if(!COOLDOWN_FINISHED(src, calm_cooldown) || stance > HOSTILE_STANCE_ALERT || snack_target)
 				break
 			if(friends.Find(intruding_mob) || friendly_factions.Find(intruding_mob.faction))
 				continue
@@ -157,7 +230,7 @@
 
 			if(stance < HOSTILE_STANCE_ALERT)
 				stance = HOSTILE_STANCE_ALERT
-				walk_to(src, 0)
+				stop_moving()
 				stop_automated_movement = TRUE
 				if(COOLDOWN_FINISHED(src, growl_message))
 					INVOKE_ASYNC(src, PROC_REF(manual_emote), "stares at [intruding_mob].", 1)
@@ -166,12 +239,13 @@
 
 			if(get_dist(src, intruding_mob) <= 1)
 				aggression_value = update_value_clamped(aggression_value, 100)
-				INVOKE_ASYNC(src, PROC_REF(manual_emote), "snarls!", 1)
+				if(!target_mob)
+					INVOKE_ASYNC(src, PROC_REF(manual_emote), "snarls!", 1)
 				Retaliate()
 
 			break
 
-		if(stance == HOSTILE_STANCE_IDLE)
+		if(stance == HOSTILE_STANCE_IDLE && !is_fleeing)
 			chance_to_rest = update_value_clamped(chance_to_rest, 5)
 			if(prob(chance_to_rest))
 				chance_to_rest = 0
@@ -180,15 +254,49 @@
 	. = ..()
 
 	if(!client)
-		if(target_mob && stance == HOSTILE_STANCE_ATTACKING && prob(75) && COOLDOWN_FINISHED(src, pounce_cooldown))
+		if(target_mob && stance == HOSTILE_STANCE_ATTACKING && COOLDOWN_FINISHED(src, pounce_cooldown) && (prob(75) || get_dist(src, intruding_mob) < 5))
 			pounce(target_mob)
 			COOLDOWN_START(src, pounce_cooldown, 4 SECONDS)
 
 		aggression_value = update_value_clamped(aggression_value, -10)
 
-		if(!intruding_mob && stance <= HOSTILE_STANCE_ALERT)
+		if(!intruding_mob && stance <= HOSTILE_STANCE_ALERT && !is_fleeing)
 			stance = HOSTILE_STANCE_IDLE
 			stop_automated_movement = FALSE
+
+/mob/living/simple_animal/hostile/retaliate/jagras/AttackingTarget()
+	if(!Adjacent(target_mob) || is_ravaging)
+		return
+	if(isliving(target_mob))
+		var/mob/living/living_mob = target_mob
+		living_mob.attack_animal(src)
+		animation_attack_on(living_mob)
+		flick_attack_overlay(living_mob, "slash")
+		playsound(loc, "alien_claw_flesh", 25, 1)
+		if(prob(50) && !is_fleeing)
+			INVOKE_ASYNC(src, PROC_REF(disengage), 2 SECONDS, 7, TRUE, TRUE)
+		return living_mob
+
+/mob/living/simple_animal/hostile/retaliate/jagras/proc/ravagingattack()
+	var/mob/living/target = target_mob
+	is_ravaging = TRUE
+	visible_message(SPAN_DANGER("<B>[src]</B> tears into [target] repeatedly!"))
+
+	for(var/attack_num = 0, attack_num < 3, attack_num++)
+		if(Adjacent(target) && stat == CONSCIOUS)
+			//This is just to scare the shit out of the target.
+			var/damage = rand(melee_damage_lower, melee_damage_upper) * 0.20
+			var/attack_type = pick("slash", "animalbite")
+			target.apply_damage(damage, BRUTE)
+			animation_attack_on(target)
+			if(attack_type == "slash")
+				playsound(loc, get_sfx("alien_claw_flesh"), 25, 1)
+			else
+				playsound(loc, get_sfx("alien_bite"), 25, 1)
+			flick_attack_overlay(target, attack_type)
+			sleep(0.5 SECONDS)
+	is_ravaging = FALSE
+	return target
 
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/eat_food()
 	setDir(get_dir(src, snack_target))
@@ -204,7 +312,6 @@
 	qdel(snack_target)
 	stance = HOSTILE_STANCE_IDLE
 	stop_automated_movement = FALSE
-	trying_to_eat = FALSE
 	chance_to_rest = update_value_clamped(chance_to_rest, 15)
 	snack_target = null
 	for(intruding_mob in oview(5, src))
@@ -212,10 +319,10 @@
 			break
 		if(!friendly_factions.Find(intruding_mob.faction))
 			friendly_factions += intruding_mob.faction
-		playsound(loc, 'sound/voice/jagras_hiss1.ogg', 35)
+		playsound(loc, pick('sound/voice/jagras_hiss1.ogg', 'sound/voice/jagras_hiss2.ogg'), 35)
 		INVOKE_ASYNC(src, PROC_REF(manual_emote), "hisses happily at [intruding_mob].", 1)
 		break
-	COOLDOWN_START(src, snack_cooldown, 20 SECONDS)
+	COOLDOWN_START(src, snack_cooldown, 30 SECONDS)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/check_if_food_taken()
 	if(!isturf(snack_target.loc))
@@ -226,22 +333,28 @@
 		else
 			aggression_value = update_value_clamped(aggression_value, 50)
 			if(aggression_value < 80)
-				INVOKE_ASYNC(src, PROC_REF(manual_emote), "looks angrily at [snack_target.loc].", 1)
+				playsound(loc, pick('sound/voice/jagras_hiss1.ogg', 'sound/voice/jagras_hiss2.ogg'), 35)
+				INVOKE_ASYNC(src, PROC_REF(manual_emote), "hisses angrily at [snack_target.loc].", 1)
 				COOLDOWN_START(src, calm_cooldown, 3 SECONDS)
 		stop_moving()
 		stop_automated_movement = FALSE
 		snack_target = null
-		trying_to_eat = FALSE
-		COOLDOWN_START(src, snack_cooldown, 5 SECONDS)
+		COOLDOWN_START(src, snack_cooldown, 15 SECONDS)
 
 /mob/living/simple_animal/hostile/retaliate/jagras/adjustBruteLoss(damage)
-	..()
+	..(damage)
+
 	aggression_value = update_value_clamped(aggression_value, 50)
+	if(!is_fleeing)
+		if(prob(50))
+			INVOKE_ASYNC(src, PROC_REF(disengage), 2 SECONDS, 7, TRUE, TRUE)
+			return
+		Retaliate()
 
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/growl(target)
 	if(COOLDOWN_FINISHED(src, growl_message))
 		playsound(loc, 'sound/voice/jagras_growl.ogg', 45, 1)
-		COOLDOWN_START(src, growl_message, 8 SECONDS)
+		COOLDOWN_START(src, growl_message, 16 SECONDS)
 		if(target)
 			INVOKE_ASYNC(src, PROC_REF(manual_emote), "growls at [target]!", 1)
 		else
@@ -257,7 +370,7 @@
 	if(bullet.damage)
 		var/splatter_dir = get_dir(bullet.starting, loc)
 		var/obj/effect/temp_visual/dir_setting/bloodsplatter/splatter_effect = new(loc, splatter_dir)
-		splatter_effect.pixel_y -= 8
+		splatter_effect.pixel_y -= 6
 
 
 // POUNCE PROCS //
@@ -308,8 +421,9 @@
 			return
 
 	playsound(loc, rand(0, 100) < 95 ? 'sound/voice/alien_pounce.ogg' : 'sound/voice/alien_pounce2.ogg', 25, 1)
-	pounced_mob.KnockDown(0.25)
+	pounced_mob.KnockDown(0.5)
 	step_to(src, pounced_mob)
+	ravagingattack()
 
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_turf(turf/turf_target)
 	if(!turf_target.density)
@@ -329,7 +443,7 @@
 
 /mob/living/simple_animal/hostile/retaliate/jagras/proc/pounced_obj(obj/O)
 	// Unconscious or dead, or not throwing but used pounce
-	if(!check_state() || (!throwing && !pounceAction.action_cooldown_check()))
+	if(stat != CONSCIOUS)
 		obj_launch_collision(O)
 		return
 
