@@ -106,7 +106,7 @@
 	user.visible_message(SPAN_NOTICE("[user] starts taking [src] down..."), SPAN_NOTICE("You start taking [src] down..."))
 
 	playsound(loc, 'sound/effects/flag_raising.ogg', 30)
-	if(!do_after(user, 6 SECONDS, INTERRUPT_ALL, BUSY_ICON_GENERIC))
+	if(!do_after(user, 6 SECONDS, INTERRUPT_ALL, BUSY_ICON_GENERIC) || QDELETED(src))
 		return
 
 	playsound(loc, 'sound/effects/flag_raised.ogg', 30)
@@ -170,7 +170,11 @@
 	icon = 'icons/obj/structures/plantable_flag.dmi'
 	inhand_x_dimension = 64
 	inhand_y_dimension = 64
+	force = 15
+	throwforce = 5
+	hitsound = "swing_hit"
 	unacidable = TRUE
+	indestructible = TRUE
 	item_icons = list(
 		WEAR_L_HAND = 'icons/mob/humans/onmob/items_lefthand_64.dmi',
 		WEAR_R_HAND = 'icons/mob/humans/onmob/items_righthand_64.dmi'
