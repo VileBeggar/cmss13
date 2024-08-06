@@ -1404,17 +1404,17 @@
 /turf/open/floor/whitepurplecorner/east,
 /area/horde_mode/science)
 "DU" = (
-/obj/structure/blocker/invisible_wall,
 /obj/structure/machinery{
 	density = 1;
 	dir = 4;
 	icon = 'icons/obj/structures/doors/2x1generic.dmi';
 	icon_state = "door_closed";
 	indestructible = 1;
-	name = "\improper M577 armored personnel carrier";
+	name = Door;
 	unacidable = 1;
 	unslashable = 1
 	},
+/obj/structure/blocker/invisible_wall,
 /turf/open/floor/whitebluefull,
 /area/horde_mode/lobby)
 "DX" = (
@@ -1780,7 +1780,6 @@
 /turf/open/gm/grass/grass1,
 /area/horde_mode/outside)
 "Mo" = (
-/obj/structure/window_frame/colony/reinforced/horde_mode,
 /obj/structure/window_frame/colony/reinforced/horde_mode,
 /turf/open/gm/grass/grass1,
 /area/horde_mode/science)
