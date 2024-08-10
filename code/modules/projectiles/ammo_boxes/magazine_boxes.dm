@@ -1029,3 +1029,30 @@
 
 /obj/item/ammo_box/magazine/mar50/empty
 	empty = TRUE
+
+//-----------------------M28 mag boxes-----------------------
+
+/obj/item/ammo_box/magazine/m28
+	overlay_gun_type = "_m28"
+	num_of_magazines = 12
+
+/obj/item/ammo_box/magazine/m28/buckshot
+	name = "magazine box (M28 buckshot x 12)"
+	overlay_content = "_reg"
+	icon_state = "base_buck"
+	magazine_type = /obj/item/ammo_magazine/rifle/m28
+	num_of_magazines = 12
+
+/obj/item/ammo_box/magazine/m28/buckshot/empty
+	empty = TRUE
+
+/obj/item/ammo_box/magazine/m28/slug
+	name = "magazine box (M28 slug x 12)"
+	overlay_ammo_type = "_ap"
+	overlay_content = "_ap"
+	icon_state = "base_slug"
+	magazine_type = /obj/item/ammo_magazine/rifle/m28/slug
+	num_of_magazines = 12
+
+/obj/item/ammo_box/magazine/m28/slug/empty
+	empty = TRUE

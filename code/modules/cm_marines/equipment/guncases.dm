@@ -386,6 +386,20 @@
 	new /obj/item/ammo_magazine/shotgun/light/breaching(src)
 	new /obj/item/storage/belt/gun/xm51(src)
 
+/obj/item/storage/box/guncase/m28
+	name = "\improper M28 burst shotgun case"
+	desc = "A gun case containing the M28 burst shotgun. Comes with three spare buckshot magazines and two slug magazines."
+	storage_slots = 6
+	can_hold = list(/obj/item/weapon/gun/rifle/xm51, /obj/item/ammo_magazine/rifle/xm51, /obj/item/storage/belt/gun/xm51, /obj/item/attachable/stock/xm51)
+
+/obj/item/storage/box/guncase/m28/fill_preset_inventory()
+	new /obj/item/weapon/gun/rifle/m28(src)
+	new /obj/item/ammo_magazine/rifle/m28(src)
+	new /obj/item/ammo_magazine/rifle/m28(src)
+	new /obj/item/ammo_magazine/rifle/m28(src)
+	new /obj/item/ammo_magazine/rifle/m28/slug(src)
+	new /obj/item/ammo_magazine/rifle/m28/slug(src)
+
 //Handgun case for Military police vendor three mag , a railflashligh and the handgun.
 
 //88 Mod 4 Combat Pistol

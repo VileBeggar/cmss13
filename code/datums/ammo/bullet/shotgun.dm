@@ -320,7 +320,7 @@
 /datum/ammo/bullet/shotgun/light/buckshot
 	name = "light buckshot shell"
 	icon_state = "buckshot"
-	handful_state = "breaching_shell"
+	handful_state = "light_buckshot"
 	bonus_projectiles_type = /datum/ammo/bullet/shotgun/light/buckshot/spread
 
 	accuracy_var_low = PROJECTILE_VARIANCE_TIER_7
@@ -338,11 +338,11 @@
 
 /datum/ammo/bullet/shotgun/light/slug
 	name = "light shotgun slug"
-	handful_state = "breaching_shell"
+	handful_state = "light_slug"
 
 	max_range = 7
-	damage = 50
-	penetration = ARMOR_PENETRATION_TIER_6
+	damage = 40
+	penetration = ARMOR_PENETRATION_TIER_8
 
 /datum/ammo/bullet/shotgun/light/slug/on_hit_mob(mob/hit_mob, obj/projectile/bullet)
 	hit_mob.apply_effect(1, SLOW)

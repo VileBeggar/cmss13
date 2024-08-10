@@ -2000,7 +2000,7 @@
 
 /obj/item/weapon/gun/rifle/m28
 	name = "\improper M28 burst shotgun"
-	desc = "A lightweight, fully automatic 16 gauge shotgun with a rechamber every 4 rounds. Use unique-action to switch between short and long bursts."
+	desc = "A lightweight, fully automatic 16 gauge shotgun with a rechamber every 4 rounds. Utilizes 16-round detachable revolver magazines.\n\n<b>Toggle firemodes</b> to switch between short and long bursts."
 	icon_state = "m28"
 	item_state = "m28"
 	fire_sound = "gun_m28"
@@ -2045,12 +2045,19 @@
 	recoil_unwielded = RECOIL_AMOUNT_TIER_2
 	scatter = SCATTER_AMOUNT_TIER_7
 
-/obj/item/weapon/gun/rifle/m28/unique_action(mob/user)
-	playsound(user, 'sound/weapons/handling/gun_burst_toggle.ogg', 15, 1)
+/obj/item/weapon/gun/rifle/m28/use_toggle_burst()
+	playsound(usr, 'sound/weapons/handling/gun_burst_toggle.ogg', 15, 1)
 	switch(burst_amount)
 		if(BURST_AMOUNT_TIER_2)
-			to_chat(user, SPAN_NOTICE("[icon2html(src, user)] You toggle [src] to fire <b>four round</b> bursts."))
+			to_chat(usr, SPAN_NOTICE("[icon2html(src, usr)] You toggle [src] to fire <b>four round</b> bursts."))
 			set_burst_amount(BURST_AMOUNT_TIER_4)
 		if(BURST_AMOUNT_TIER_4)
-			to_chat(user, SPAN_NOTICE("[icon2html(src, user)] You toggle [src] to fire <b>two round</b> bursts."))
+			to_chat(usr, SPAN_NOTICE("[icon2html(src, usr)] You toggle [src] to fire <b>two round</b> bursts."))
 			set_burst_amount(BURST_AMOUNT_TIER_2)
+
+/obj/item/weapon/gun/update_icon()
+	. = ..()
+	if(istype(current_mag, /obj/item/ammo_magazine/rifle/m28/slug))
+		var/image/slug_overlay = image(icon, icon_state = "+m28_band")
+		slug_overlay.color = AMMO_BAND_COLOR_AP
+		overlays += slug_overlay
