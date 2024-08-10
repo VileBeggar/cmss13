@@ -716,6 +716,7 @@ As sniper rifles have both and weapon mods can change them as well. ..() deals w
 	data["penetration_max"] = ARMOR_PENETRATION_TIER_10
 	data["punch_max"] = 5
 	data["automatic"] = (GUN_FIREMODE_AUTOMATIC in gun_firemode_list)
+	data["no_singlefire"] = !(GUN_FIREMODE_SEMIAUTO in gun_firemode_list)
 	data["auto_only"] = ((length(gun_firemode_list) == 1) && (GUN_FIREMODE_AUTOMATIC in gun_firemode_list))
 
 	return data

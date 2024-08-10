@@ -557,6 +557,19 @@ Defined in conflicts.dm of the #defines folder.
 	pixel_shift_x = 14
 	hud_offset_mod = -4
 
+/obj/item/attachable/m28_stock
+	name = "M28 stock"
+	desc = "This isn't supposed to be separated from the gun, how'd this happen?"
+	icon = 'icons/obj/items/weapons/guns/attachments/stock.dmi'
+	icon_state = "m28_stock_a"
+	attach_icon = "m28_stock_a"
+	slot = "stock"
+	wield_delay_mod = WIELD_DELAY_NONE
+	flags_attach_features = NO_FLAGS
+	melee_mod = 0 //Integrated attachment for visuals, stats handled on main gun.
+	size_mod = 0
+	hud_offset_mod = 12
+
 // Mateba barrels
 
 /obj/item/attachable/mateba

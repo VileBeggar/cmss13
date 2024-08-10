@@ -521,3 +521,25 @@
 	max_rounds = 12
 	gun_type = /obj/item/weapon/gun/rifle/xm51
 	transfer_handful_amount = 6
+
+//--------------------------------------------------------
+//M28 BURST SHOTGUN
+
+/obj/item/ammo_magazine/rifle/m28
+	name = "\improper M28 buckshot magazine (16g)"
+	desc = "A 16 gauge shotgun magazine loaded with buckshot."
+	icon_state = "m28"
+	caliber = "16g"
+	w_class = SIZE_MEDIUM
+	default_ammo = /datum/ammo/bullet/shotgun/light/buckshot
+	max_rounds = 12
+	gun_type = /obj/item/weapon/gun/rifle/m28
+	transfer_handful_amount = 6
+
+/obj/item/ammo_magazine/rifle/m28/slug
+	name = "\improper M28 slug magazine (16g)"
+	desc = "A 16 gauge shotgun magazine loaded with armor-piercing slugs."
+	default_ammo = /datum/ammo/bullet/shotgun/light/slug
+	ammo_band_color = AMMO_BAND_COLOR_AP
+	ammo_band_icon = "+m28_band"
+	ammo_band_icon_empty = "+m28_band"

@@ -1994,3 +1994,63 @@
 
 /obj/item/weapon/gun/rifle/xm51/cock(mob/user) //Stops the "You cock the gun." message where nothing happens.
 	return
+
+//-------------------------------------------------------
+//M28, Burst Shotgun
+
+/obj/item/weapon/gun/rifle/m28
+	name = "\improper M28 burst shotgun"
+	desc = "A lightweight, fully automatic 16 gauge shotgun with a rechamber every 4 rounds. Use unique-action to switch between short and long bursts."
+	icon_state = "m28"
+	item_state = "m28"
+	fire_sound = "gun_m28"
+	reload_sound = 'sound/weapons/handling/l42_reload.ogg'
+	unload_sound = 'sound/weapons/handling/l42_unload.ogg'
+	current_mag = /obj/item/ammo_magazine/rifle/m28
+	attachable_allowed = list(
+		/obj/item/attachable/bayonet,
+		/obj/item/attachable/suppressor,
+		/obj/item/attachable/bayonet/upp,
+		/obj/item/attachable/bayonet/co2,
+		/obj/item/attachable/reddot,
+		/obj/item/attachable/reflex,
+		/obj/item/attachable/flashlight,
+		/obj/item/attachable/magnetic_harness,
+		/obj/item/attachable/m28_stock
+	)
+	starting_attachment_types = list(/obj/item/attachable/m28_stock)
+	flags_equip_slot = SLOT_BACK
+	flags_gun_features = GUN_AUTO_EJECTOR|GUN_CAN_POINTBLANK|GUN_AMMO_COUNTER
+	gun_category = GUN_CATEGORY_SHOTGUN
+	aim_slowdown = SLOWDOWN_ADS_VERSATILE
+	wield_delay = WIELD_DELAY_FAST
+	gun_firemode = GUN_FIREMODE_BURSTFIRE
+	gun_firemode_list = list(
+		GUN_FIREMODE_BURSTFIRE,
+	)
+	start_semiauto = FALSE
+
+/obj/item/weapon/gun/rifle/m28/set_gun_attachment_offsets()
+	attachable_offset = list("muzzle_x" = 32, "muzzle_y" = 20, "rail_x" = 4, "rail_y" = 22, "under_x" = 24, "under_y" = 13, "stock_x" = -7, "stock_y" = 16)
+
+/obj/item/weapon/gun/rifle/m28/set_gun_config_values()
+	..()
+	set_fire_delay(FIRE_DELAY_TIER_6*2)
+	set_burst_amount(BURST_AMOUNT_TIER_4)
+	set_burst_delay(FIRE_DELAY_TIER_LMG)
+	burst_scatter_mult = SCATTER_AMOUNT_TIER_10
+	accuracy_mult = BASE_ACCURACY_MULT + 2*HIT_ACCURACY_MULT_TIER_8
+	accuracy_mult_unwielded = BASE_ACCURACY_MULT - HIT_ACCURACY_MULT_TIER_8
+	recoil = RECOIL_AMOUNT_TIER_4
+	recoil_unwielded = RECOIL_AMOUNT_TIER_2
+	scatter = SCATTER_AMOUNT_TIER_7
+
+/obj/item/weapon/gun/rifle/m28/unique_action(mob/user)
+	playsound(user, 'sound/weapons/handling/gun_burst_toggle.ogg', 15, 1)
+	switch(burst_amount)
+		if(BURST_AMOUNT_TIER_2)
+			to_chat(user, SPAN_NOTICE("[icon2html(src, user)] You toggle [src] to fire <b>four round</b> bursts."))
+			set_burst_amount(BURST_AMOUNT_TIER_4)
+		if(BURST_AMOUNT_TIER_4)
+			to_chat(user, SPAN_NOTICE("[icon2html(src, user)] You toggle [src] to fire <b>two round</b> bursts."))
+			set_burst_amount(BURST_AMOUNT_TIER_2)

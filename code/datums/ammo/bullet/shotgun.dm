@@ -314,12 +314,43 @@
 /*
 					16 GAUGE SHOTGUN AMMO
 */
+/datum/ammo/bullet/shotgun/light
+	multiple_handful_name = TRUE
+
+/datum/ammo/bullet/shotgun/light/buckshot
+	name = "light buckshot shell"
+	icon_state = "buckshot"
+	handful_state = "breaching_shell"
+	bonus_projectiles_type = /datum/ammo/bullet/shotgun/light/buckshot/spread
+
+	accuracy_var_low = PROJECTILE_VARIANCE_TIER_7
+	accuracy_var_high = PROJECTILE_VARIANCE_TIER_6
+	damage = 35
+	max_range = 7
+	bonus_projectiles_amount = EXTRA_PROJECTILES_TIER_2
+	penetration = ARMOR_PENETRATION_TIER_1
+
+/datum/ammo/bullet/shotgun/light/buckshot/spread
+	name = "additional light breaching fragments"
+	bonus_projectiles_amount = 0
+	scatter = SCATTER_AMOUNT_TIER_4
+	damage = 20
+
+/datum/ammo/bullet/shotgun/light/slug
+	name = "light shotgun slug"
+	handful_state = "breaching_shell"
+
+	max_range = 7
+	damage = 50
+	penetration = ARMOR_PENETRATION_TIER_6
+
+/datum/ammo/bullet/shotgun/light/slug/on_hit_mob(mob/hit_mob, obj/projectile/bullet)
+	hit_mob.apply_effect(1, SLOW)
 
 /datum/ammo/bullet/shotgun/light/breaching
 	name = "light breaching shell"
 	icon_state = "flechette"
 	handful_state = "breaching_shell"
-	multiple_handful_name = TRUE
 	bonus_projectiles_type = /datum/ammo/bullet/shotgun/light/breaching/spread
 
 	accuracy_var_low = PROJECTILE_VARIANCE_TIER_6
@@ -332,8 +363,6 @@
 /datum/ammo/bullet/shotgun/light/breaching/spread
 	name = "additional light breaching fragments"
 	bonus_projectiles_amount = 0
-	accuracy_var_low = PROJECTILE_VARIANCE_TIER_6
-	accuracy_var_high = PROJECTILE_VARIANCE_TIER_6
 	scatter = SCATTER_AMOUNT_TIER_3
 	damage = 10
 

@@ -55,6 +55,7 @@ const GeneralInfo = (props) => {
     burst_amount,
     two_handed_only,
     auto_only,
+    no_singlefire,
     baseicon,
     icon,
   } = data;
@@ -83,7 +84,7 @@ const GeneralInfo = (props) => {
                 className={classes([
                   'Icon',
                   'gunlineartmodes96x32',
-                  `${!auto_only ? 'single' : 'disabled_single'}`,
+                  `${!auto_only ? (no_singlefire ? 'disabled_single' : 'single') : 'disabled_single'}`,
                 ])}
               />
             </Flex.Item>
