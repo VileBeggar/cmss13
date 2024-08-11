@@ -46,6 +46,12 @@
 
 //rocket launchers
 
+/obj/item/ammo_magazine/internal/m6b
+	name = "m6b internal magazine"
+	default_ammo = /obj/item/ammo_magazine/rocket
+	max_rounds = 2 //2 + 1 in chamber = 3
+	gun_type = /obj/item/weapon/gun/launcher/rocket/m6b
+
 /obj/item/ammo_magazine/rifle/grenadespawner
 	AUTOWIKI_SKIP(TRUE)
 
