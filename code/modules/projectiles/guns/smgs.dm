@@ -94,6 +94,48 @@
 /obj/item/weapon/gun/smg/m39/training
 	current_mag = /obj/item/ammo_magazine/smg/m39/rubber
 
+
+//-------------------------------------------------------
+//M39A2 SMG -- Aliens: Fireteam Elite
+
+/obj/item/weapon/gun/smg/m39/m39c
+
+	name = "\improper M39C submachinegun"
+	desc = "The 'Sephora', designated M39C, is an experimental model designed to replace the original, first unwieldy M39 model and its successor, the M39B/2. It features an integrated angled grip, better ergonomics and handling, which all result in a much more accurate weapon compared to the original."
+	icon = 'icons/obj/items/weapons/guns/guns_by_faction/uscm.dmi'
+	icon_state = "m39c"
+	item_state = "m39"
+	attachable_allowed = list(
+		/obj/item/attachable/suppressor,
+		/obj/item/attachable/reddot,
+		/obj/item/attachable/reflex,
+		/obj/item/attachable/stock/smg,
+		/obj/item/attachable/stock/smg/collapsible,
+		/obj/item/attachable/compensator,
+		/obj/item/attachable/flashlight,
+		/obj/item/attachable/extended_barrel,
+		/obj/item/attachable/bayonet,
+		/obj/item/attachable/bayonet/upp,
+		/obj/item/attachable/bayonet/co2,
+		/obj/item/attachable/heavy_barrel,
+		/obj/item/attachable/scope/mini,
+		/obj/item/attachable/magnetic_harness,
+		/obj/item/attachable/stock/smg/collapsible/brace,
+	)
+	map_specific_decoration = FALSE
+	wield_delay = WIELD_DELAY_MIN
+
+/obj/item/weapon/gun/smg/m39/m39c/set_gun_attachment_offsets()
+	attachable_offset = list("muzzle_x" = 30, "muzzle_y" = 20,"rail_x" = 14, "rail_y" = 22, "under_x" = 21, "under_y" = 16, "stock_x" = 22, "stock_y" = 15)
+
+/obj/item/weapon/gun/smg/m39/set_gun_config_values()
+	..()
+	accuracy_mult = BASE_ACCURACY_MULT + HIT_ACCURACY_MULT_TIER_10
+	accuracy_mult_unwielded = BASE_ACCURACY_MULT
+	scatter = SCATTER_AMOUNT_TIER_6
+	burst_scatter_mult = SCATTER_AMOUNT_TIER_9
+	damage_mult = BASE_BULLET_DAMAGE_MULT + BULLET_DAMAGE_MULT_TIER_7
+
 //-------------------------------------------------------
 
 /obj/item/weapon/gun/smg/m39/elite

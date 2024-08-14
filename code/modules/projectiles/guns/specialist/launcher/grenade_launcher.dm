@@ -369,3 +369,32 @@
 	LAZYADD(traits_to_give, list(
 		BULLET_TRAIT_ENTRY(/datum/element/bullet_trait_iff)//might not need this because of is_lobbing, but let's keep it just incase
 	))
+
+/obj/item/weapon/gun/launcher/grenade/china_lake
+	name = "\improper China Lake grenade launcher"
+	desc = "A hefty, semi-automatic grenade launcher. With a capacity of four grenades, you think you know what to do."
+	icon = 'icons/obj/items/weapons/guns/guns_by_faction/uscm.dmi'
+	icon_state = "china_lake"
+	item_state = "m79"
+	flags_equip_slot = SLOT_BACK
+	is_lobbing = TRUE
+	flags_item = TWOHANDED|NO_CRYO_STORE
+	actions_types = list(/datum/action/item_action/toggle_firing_level)
+	starting_attachment_types = list(/obj/item/attachable/stock/china_lake)
+	internal_slots = 4
+
+	fire_sound = 'sound/weapons/handling/m79_shoot.ogg'
+	cocked_sound = 'sound/weapons/handling/m79_break_open.ogg'
+	reload_sound = 'sound/weapons/handling/m79_reload.ogg'
+	unload_sound = 'sound/weapons/handling/m79_unload.ogg'
+
+	attachable_allowed = list(
+		/obj/item/attachable/magnetic_harness,
+		/obj/item/attachable/flashlight,
+		/obj/item/attachable/reddot,
+		/obj/item/attachable/reflex,
+		/obj/item/attachable/stock/china_lake
+	)
+
+/obj/item/weapon/gun/launcher/grenade/china_lake/set_gun_attachment_offsets()
+	attachable_offset = list("muzzle_x" = 33, "muzzle_y" = 18,"rail_x" = 9, "rail_y" = 22, "under_x" = 19, "under_y" = 14, "stock_x" = 14, "stock_y" = 14)

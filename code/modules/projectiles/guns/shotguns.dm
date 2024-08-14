@@ -1187,6 +1187,30 @@ can cause issues with ammo types getting mixed up during the burst.
 		pumped = FALSE
 	return ..()
 
+
+/obj/item/weapon/gun/shotgun/pump/m37a3
+	name = "\improper M37A3 pump shotgun"
+	desc = "An improvement over the classic M37A2 model, the A3 features a much quicker cycling system allowing for the user to toss out more punches at a faster rate. Features an integrated, lightweight stock for more accurate fire."
+	icon_state = "m37a3"
+	item_state = "mp220"
+	map_specific_decoration = FALSE
+	starting_attachment_types = list(/obj/item/attachable/stock/m37a3)
+
+/obj/item/weapon/gun/shotgun/pump/m37a3/Initialize(mapload, spawn_empty)
+	. = ..()
+	pump_delay = FIRE_DELAY_TIER_4
+	additional_fire_group_delay += pump_delay - FIRE_DELAY_TIER_5*2 //adjust the inherited value from /shotgun/pump
+
+/obj/item/weapon/gun/shotgun/pump/m37a3/set_gun_attachment_offsets()
+	attachable_offset = list("muzzle_x" = 32, "muzzle_y" = 19, "rail_x" = 6, "rail_y" = 21, "under_x" = 17, "under_y" = 14, "stock_x" = 14, "stock_y" = 14)
+
+/obj/item/weapon/gun/shotgun/pump/m37a3/set_gun_config_values()
+	..()
+	set_burst_amount(BURST_AMOUNT_TIER_1)
+	set_fire_delay(FIRE_DELAY_TIER_2)
+	accuracy_mult = BASE_ACCURACY_MULT + HIT_ACCURACY_MULT_TIER_8
+	damage_mult = BASE_BULLET_DAMAGE_MULT + BULLET_DAMAGE_MULT_TIER_4
+
 //-------------------------------------------------------
 
 /obj/item/weapon/gun/shotgun/pump/dual_tube
