@@ -101,10 +101,15 @@
 /obj/item/weapon/gun/smg/m39/m39c
 
 	name = "\improper M39C submachinegun"
-	desc = "The 'Sephora', designated M39C, is an experimental model designed to replace the original, first unwieldy M39 model and its successor, the M39B/2. It features an integrated angled grip, better ergonomics and handling, which all result in a much more accurate weapon compared to the original."
+	desc = "The 'Sephora', designated M39C, is an experimental model designed to replace the original M39 model and its successor, the M39B/2. It features an integrated angled grip, better ergonomics and handling, which all result in a much more deadly weapon compared to the original."
 	icon = 'icons/obj/items/weapons/guns/guns_by_faction/uscm.dmi'
 	icon_state = "m39c"
-	item_state = "m39"
+	item_icons = list(
+		WEAR_L_HAND = 'icons/obj/items/weapons/guns/guns_by_map/desert/guns_lefthand.dmi',
+		WEAR_R_HAND = 'icons/obj/items/weapons/guns/guns_by_map/desert/guns_righthand.dmi',
+		WEAR_BACK = 'icons/obj/items/weapons/guns/guns_by_map/desert/back.dmi',
+		WEAR_J_STORE = 'icons/obj/items/weapons/guns/guns_by_map/desert/suit_slot.dmi'
+	)
 	attachable_allowed = list(
 		/obj/item/attachable/suppressor,
 		/obj/item/attachable/reddot,
@@ -124,6 +129,7 @@
 	)
 	map_specific_decoration = FALSE
 	wield_delay = WIELD_DELAY_MIN
+
 
 /obj/item/weapon/gun/smg/m39/m39c/set_gun_attachment_offsets()
 	attachable_offset = list("muzzle_x" = 30, "muzzle_y" = 20,"rail_x" = 14, "rail_y" = 22, "under_x" = 21, "under_y" = 16, "stock_x" = 22, "stock_y" = 15)

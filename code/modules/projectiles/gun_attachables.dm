@@ -1974,6 +1974,15 @@ Defined in conflicts.dm of the #defines folder.
 	desc = "The non-detachable stock of a M37-17 pump shotgun."
 	icon_state = "hg3717_stock"
 
+/obj/item/attachable/stock/m41ae3
+	name = "M41AE3 solid stock"
+	desc = "The non-detachable stock of a M41AE3 heavy pulse rifle."
+	icon_state = "m41ae3_stock"
+	flags_attach_features = NO_FLAGS
+
+/obj/item/attachable/stock/m41ae3/New()
+	..()
+
 /obj/item/attachable/stock/rifle
 	name = "\improper M41A solid stock"
 	desc = "A rare stock distributed in small numbers to USCM forces. Compatible with the M41A, this stock reduces recoil and improves accuracy, but at a reduction to handling and agility. Also enhances the thwacking of things with the stock-end of the rifle."
@@ -2291,6 +2300,19 @@ Defined in conflicts.dm of the #defines folder.
 
 /obj/item/attachable/stock/m6b/New()//no stats, its cosmetic
 	..()
+
+/obj/item/attachable/m41ae3_barrel
+	name = "M41AE3 barrel"
+	desc = "This isn't supposed to be separated from the gun, how'd this happen?"
+	icon_state = "m41ae3_barrel"
+	attach_icon = "m41ae3_barrel"
+	slot = "special"
+	wield_delay_mod = WIELD_DELAY_NONE
+	flags_attach_features = NO_FLAGS
+	melee_mod = 0 //Integrated attachment for visuals, stats handled on main gun.
+	size_mod = 0
+	pixel_shift_x = -21
+	pixel_shift_y = 0
 
 /obj/item/attachable/m4ra_barrel
 	name = "M4RA barrel"

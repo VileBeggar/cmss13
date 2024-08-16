@@ -1266,7 +1266,47 @@
 	damage_mult = BASE_BULLET_DAMAGE_MULT
 	recoil_unwielded = RECOIL_AMOUNT_TIER_1
 
+//-------------------------------------------------------
+//M41AE3 HEAVY PULSE RIFLE -- Aliens: Dark Descent LMG
 
+	/obj/item/weapon/gun/rifle/lmg/m41ae3
+	name = "\improper M41AE3 heavy pulse rifle"
+	desc = "The Armat M41AE3 heavy pulse rifle is an advancement of the AE2 machine gun variant. Easily recognizable by its longer barrel and smaller magazine, it features a faster firing rate and full-auto capabilities."
+	icon = 'icons/obj/items/weapons/guns/guns_by_faction/uscm.dmi'
+	icon_state = "m41ae3"
+
+	flags_gun_features = GUN_CAN_POINTBLANK|GUN_AMMO_COUNTER|GUN_WIELDED_FIRING_ONLY
+	start_automatic = TRUE
+	aim_slowdown = SLOWDOWN_ADS_LMG + SLOWDOWN_ADS_QUICK
+	current_mag = /obj/item/ammo_magazine/rifle/lmg/m41ae3
+
+	starting_attachment_types = list(/obj/item/attachable/stock/m41ae3, /obj/item/attachable/m41ae3_barrel)
+	attachable_allowed = list(
+		/obj/item/attachable/suppressor,
+		/obj/item/attachable/reddot,
+		/obj/item/attachable/reflex,
+		/obj/item/attachable/verticalgrip,
+		/obj/item/attachable/angledgrip,
+		/obj/item/attachable/flashlight/grip,
+		/obj/item/attachable/flashlight,
+		/obj/item/attachable/bipod,
+		/obj/item/attachable/heavy_barrel,
+		/obj/item/attachable/compensator,
+		/obj/item/attachable/burstfire_assembly,
+		/obj/item/attachable/magnetic_harness,
+	)
+
+/obj/item/weapon/gun/rifle/lmg/m41ae3/set_gun_attachment_offsets()
+	attachable_offset = list("muzzle_x" = 40, "muzzle_y" = 18, "rail_x" = 10, "rail_y" = 23, "under_x" = 23, "under_y" = 12, "stock_x" = 19, "stock_y" = 14)
+
+/obj/item/weapon/gun/rifle/lmg/m41ae3/set_gun_config_values()
+	..()
+	set_fire_delay(FIRE_DELAY_TIER_SMG)
+	set_burst_delay(FIRE_DELAY_TIER_SMG)
+	fa_scatter_peak = FULL_AUTO_SCATTER_PEAK_TIER_5
+	fa_max_scatter = SCATTER_AMOUNT_TIER_6
+	burst_scatter_mult = SCATTER_AMOUNT_TIER_8
+	accuracy_mult = BASE_ACCURACY_MULT + HIT_ACCURACY_MULT_TIER_4
 
 //-------------------------------------------------------
 
@@ -1994,3 +2034,4 @@
 
 /obj/item/weapon/gun/rifle/xm51/cock(mob/user) //Stops the "You cock the gun." message where nothing happens.
 	return
+
