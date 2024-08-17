@@ -803,6 +803,11 @@
 	return indexed_hive.is_ally(src)
 
 /datum/hive_status/proc/is_ally(mob/living/living_mob)
+	if(isanimalhordemode(living_mob))
+		var/mob/living/simple_animal/hostile/alien/horde_mode/zenomorf = living_mob
+		if(zenomorf.hivenumber == hivenumber)
+			return TRUE
+
 	if(isxeno(living_mob))
 		var/mob/living/carbon/xenomorph/zenomorf = living_mob
 		if(zenomorf.hivenumber == hivenumber)

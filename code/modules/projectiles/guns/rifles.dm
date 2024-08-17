@@ -1277,7 +1277,6 @@
 
 	flags_gun_features = GUN_CAN_POINTBLANK|GUN_AMMO_COUNTER|GUN_WIELDED_FIRING_ONLY
 	start_automatic = TRUE
-	aim_slowdown = SLOWDOWN_ADS_LMG + SLOWDOWN_ADS_QUICK
 	current_mag = /obj/item/ammo_magazine/rifle/lmg/m41ae3
 
 	starting_attachment_types = list(/obj/item/attachable/stock/m41ae3, /obj/item/attachable/m41ae3_barrel)

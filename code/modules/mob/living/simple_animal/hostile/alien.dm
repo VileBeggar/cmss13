@@ -126,18 +126,17 @@
 	. = ..()
 	if(P.damage)
 		var/splatter_dir = get_dir(P.starting, loc)//loc is the xeno getting hit, P.starting is the turf of where the projectile got spawned
-		new /obj/effect/temp_visual/dir_setting/bloodsplatter/xenosplatter(loc, splatter_dir)
+		handle_blood_splatter(splatter_dir)
 		if(prob(15))
-			roar_emote()
+			emote("roar")
 
 /mob/living/simple_animal/hostile/alien/AttackingTarget()
 	. = ..()
 	if(. && prob(15))
-		roar_emote()
+		emote("roar")
 
-/mob/living/simple_animal/hostile/alien/proc/roar_emote()
-	visible_message("<B>The [name]</B> roars!")
-	playsound(loc, "alien_roar", 40)
+/mob/living/simple_animal/hostile/alien/handle_blood_splatter(splatter_dir)
+	new /obj/effect/temp_visual/dir_setting/bloodsplatter/xenosplatter(loc, splatter_dir)
 
 /mob/living/simple_animal/hostile/alien/death(cause, gibbed, deathmessage = "lets out a waning guttural screech, green blood bubbling from its maw. The caustic acid starts melting the body away...")
 	. = ..()
