@@ -65,6 +65,9 @@
 	var/unsuitable_atoms_damage = 2 //This damage is taken when atmos doesn't fit all the requirements above
 	var/fire_overlay
 
+	///All brute damage recieved will be multiplied by this number
+	var/brute_damage_mod = 1
+
 /mob/living/simple_animal/Initialize()
 	. = ..()
 	if(isanimalhordemode(src))
@@ -405,7 +408,7 @@
 		explosion_throw(severity, direction)
 
 /mob/living/simple_animal/adjustBruteLoss(damage)
-	health = min(health - damage, maxHealth)
+	health = min(health - damage * brute_damage_mod, maxHealth)
 
 /mob/living/simple_animal/adjustFireLoss(damage)
 	health = min(health - damage, maxHealth)

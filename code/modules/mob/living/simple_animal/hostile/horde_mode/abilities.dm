@@ -2,14 +2,15 @@
 	hidden = TRUE
 	var/cooldown_length = 4 SECONDS
 	var/ability_type = HORDE_MODE_ABILITY_ACTIVE
+	var/chance_to_activate = 100
 	COOLDOWN_DECLARE(ability_cooldown)
 
 /datum/action/horde_mode_action/proc/use_ability()
-	if(!COOLDOWN_FINISHED(src, ability_cooldown))
+	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate))
 		return
 
 /datum/action/horde_mode_action/proc/apply_cooldown()
-	COOLDOWN_START(src, ability_cooldown, cooldown_length * rand(0.9, 1.2))
+	COOLDOWN_START(src, ability_cooldown, cooldown_length)
 
 //--------------------------------
 // PLANT WEEDS
@@ -105,7 +106,7 @@
 // ACID SLASH
 
 /datum/action/horde_mode_action/acid_slash
-	ability_type = HORDE_MODE_ABILITY_ATTACK
+	ability_type = HORDE_MODE_ABILITY_POSTATTACK
 
 /datum/action/horde_mode_action/acid_slash/use_ability(mob/living/carbon/human/target)
 	. = ..()
@@ -117,3 +118,103 @@
 		break
 
 	new /datum/effects/acid(target, src)
+
+//--------------------------------
+// TAIL SWIPE
+
+/datum/action/horde_mode_action/tail_swipe
+	ability_type = HORDE_MODE_ABILITY_PREATTACK
+	cooldown_length = 15 SECONDS
+	var/swipe_range = 1
+	var/paralyze = FALSE
+	var/distance = 4
+
+/datum/action/horde_mode_action/tail_swipe/use_ability()
+	. = ..()
+
+	apply_cooldown()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	xeno.spin_circle()
+	xeno.emote("tail")
+	for(var/mob/living/target in view(swipe_range, xeno))
+		if(target.stat == DEAD || target.mob_size >= MOB_SIZE_BIG || target.faction == xeno.faction)
+			continue
+		if(ishuman(target))
+			var/mob/living/carbon/human/human_target = target
+			if(human_target.check_shields(0, name))
+				playsound(xeno.loc, "bonk", 75, FALSE)
+				continue
+
+		var/facing = get_dir(xeno, target)
+		target.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower), BRUTE)
+		playsound(target,'sound/weapons/alien_claw_block.ogg', 75, 1)
+		xeno.throw_mob(target, facing, distance)
+		if(paralyze)
+			target.apply_effect(1, PARALYZE)
+			target.apply_effect(1, WEAKEN)
+
+//--------------------------------
+// TOSS MOB
+
+/datum/action/horde_mode_action/toss_mob
+	ability_type = HORDE_MODE_ABILITY_PREATTACK
+	cooldown_length = 10 SECONDS
+	var/paralyze = FALSE
+	var/distance = 4
+	var/damage_multiplier = 1
+
+/datum/action/horde_mode_action/toss_mob/use_ability(mob/living/target)
+	. = ..()
+
+	apply_cooldown()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+
+	xeno.animation_attack_on(target)
+	if(ishuman(target))
+		var/mob/living/carbon/human/human_target = target
+		if(human_target.check_shields(0, name))
+			playsound(xeno.loc, "bonk", 75, FALSE)
+			return
+
+	var/facing = get_dir(xeno, target)
+	target.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower) * damage_multiplier, BRUTE)
+	playsound(target,'sound/weapons/alien_claw_block.ogg', 75, 1)
+	xeno.throw_mob(target, facing, distance)
+	if(paralyze)
+		target.apply_effect(1, PARALYZE)
+		target.apply_effect(1, WEAKEN)
+
+/datum/action/horde_mode_action/toss_mob/headbutt
+	damage_multiplier = 0.33
+	distance = 2
+
+/datum/action/horde_mode_action/toss_mob/headbutt/use_ability(mob/living/target)
+	. = ..()
+	owner.visible_message(SPAN_XENOWARNING("[owner] rams [target] with its armored crest!"))
+
+
+//--------------------------------
+// STEELCREST FORTIFY
+
+/datum/action/horde_mode_action/steelcrest_fortify
+	ability_type = HORDE_MODE_ABILITY_SPECIAL
+	cooldown_length = 0 SECONDS
+
+/datum/action/horde_mode_action/steelcrest_fortify/use_ability()
+	. = ..()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest/xeno = owner
+	switch(xeno.fortified)
+		if(TRUE)
+			xeno.icon_state = "Steelcrest Defender Walking"
+			xeno.brute_damage_mod = 1
+			xeno.move_to_delay -= HORDE_MODE_SPEED_MOD_MEDIUM
+			xeno.fortified = FALSE
+			xeno.status_flags |= CANSTUN
+			xeno.mob_size = MOB_SIZE_XENO
+		if(FALSE)
+			xeno.icon_state = "Steelcrest Defender Fortify"
+			xeno.brute_damage_mod = 0.66
+			xeno.move_to_delay += HORDE_MODE_SPEED_MOD_MEDIUM
+			xeno.fortified = TRUE
+			xeno.status_flags &= ~CANSTUN
+			xeno.mob_size = MOB_SIZE_BIG

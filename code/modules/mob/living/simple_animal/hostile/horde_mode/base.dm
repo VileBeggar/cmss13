@@ -13,9 +13,13 @@
 	icon_size = 48
 	pixel_x = -12
 	old_x = -12
+	langchat_color = "#b491c8"
+	mob_size = MOB_SIZE_XENO
 
+	var/preattack_move = FALSE
 	var/strain_icon_path
 	var/strain_icon_state
+	var/strain_is_overlay = FALSE
 	var/mutable_appearance/strain_overlay
 	///List of all actions that the mob is supposed to have. Given during initialization.
 	var/list/base_actions = list()
@@ -25,30 +29,83 @@
 	COOLDOWN_DECLARE(slash_cooldown)
 
 //--------------------------------
-// INIT
+// INIT AND ICONS
 
 /mob/living/simple_animal/hostile/alien/horde_mode/Initialize()
+	langchat_height = icon_size
 	add_abilities()
-	if(strain_icon_state)
+	if(strain_icon_state && strain_is_overlay)
 		strain_overlay = mutable_appearance(strain_icon_path, "[strain_icon_state] Walking")
 		overlays += strain_overlay
 	return ..()
 
+
+//some strains are overlays while others are full icons. we need to take both into account.
 /mob/living/simple_animal/hostile/alien/horde_mode/update_transform(instant_update)
 	. = ..()
 
-	overlays -= strain_overlay
-	strain_overlay.overlays.Cut()
-	if(stat == DEAD)
-		strain_overlay.icon_state = "[strain_icon_state] Dead"
-	else if(body_position == LYING_DOWN)
-		if(!HAS_TRAIT(src, TRAIT_INCAPACITATED) && !HAS_TRAIT(src, TRAIT_FLOORED))
-			strain_overlay.icon_state = "[strain_icon_state] Sleeping"
+	if(strain_icon_state)
+		if(strain_is_overlay)
+			overlays -= strain_overlay
+			strain_overlay.overlays.Cut()
+			if(stat == DEAD)
+				strain_overlay.icon_state = "[strain_icon_state] Dead"
+			else if(body_position == LYING_DOWN)
+				if(!HAS_TRAIT(src, TRAIT_INCAPACITATED) && !HAS_TRAIT(src, TRAIT_FLOORED))
+					strain_overlay.icon_state = "[strain_icon_state] Sleeping"
+				else
+					strain_overlay.icon_state = "[strain_icon_state] Knocked Down"
+			else
+				strain_overlay.icon_state = "[strain_icon_state] Walking"
+			overlays += strain_overlay
+
 		else
-			strain_overlay.icon_state = "[strain_icon_state] Knocked Down"
+
+			if(stat == DEAD)
+				icon_state = "[strain_icon_state] Dead"
+			else if(body_position == LYING_DOWN)
+				if(!HAS_TRAIT(src, TRAIT_INCAPACITATED) && !HAS_TRAIT(src, TRAIT_FLOORED))
+					icon_state = "[strain_icon_state] Sleeping"
+				else
+					icon_state = "[strain_icon_state] Knocked Down"
+			else
+				icon_state = "[strain_icon_state] Walking"
+
+/mob/living/simple_animal/hostile/alien/horde_mode/handle_icon()
+	if(strain_icon_state)
+		icon_state = "[strain_icon_state] Running"
+		icon_living = "[strain_icon_state] Running"
+		icon_dead = "[strain_icon_state] Dead"
 	else
-		strain_overlay.icon_state = "[strain_icon_state] Walking"
-	overlays += strain_overlay
+		icon_state = "Normal [caste_name] Running"
+		icon_living = "Normal [caste_name] Running"
+		icon_dead = "Normal [caste_name] Dead"
+
+
+// we need to make a special case for defenders due to lowered crests & fortify
+/mob/living/simple_animal/hostile/alien/horde_mode/update_wounds()
+	if(!wound_icon_holder)
+		return
+
+	wound_icon_holder.layer = layer + 0.01
+	wound_icon_holder.dir = dir
+	var/health_threshold = max(ceil((health * 4) / (maxHealth)), 0) //From 0 to 4, in 25% chunks
+	if(health > HEALTH_THRESHOLD_DEAD)
+		if(health_threshold > 3)
+			wound_icon_holder.icon_state = "none"
+		else if(body_position == LYING_DOWN)
+			if(!HAS_TRAIT(src, TRAIT_INCAPACITATED) && !HAS_TRAIT(src, TRAIT_FLOORED))
+				wound_icon_holder.icon_state = "[caste_name]_rest_[health_threshold]"
+			else
+				wound_icon_holder.icon_state = "[caste_name]_downed_[health_threshold]"
+		else if(istype(src, /mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest))
+			var/mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest/defender = src
+			if(defender.fortified)
+				wound_icon_holder.icon_state = "[caste_name]_fortify_[health_threshold]"
+			else if (defender.crest_lowered)
+				wound_icon_holder.icon_state = "[caste_name]_crest_[health_threshold]"
+		else
+			wound_icon_holder.icon_state = "[caste_name]_walk_[health_threshold]"
 
 //--------------------------------
 // ABILITIES
@@ -61,10 +118,12 @@
 
 /mob/living/simple_animal/hostile/alien/horde_mode/proc/handle_abilities(ability_type, passed_arg)
 	for(var/datum/action/horde_mode_action/action in actions)
-		if(stat == DEAD || body_position == LYING_DOWN || action.ability_type != ability_type)
+		if(stat == DEAD || body_position == LYING_DOWN || action.ability_type != ability_type || !COOLDOWN_FINISHED(action, ability_cooldown))
 			continue
-		if(COOLDOWN_FINISHED(action, ability_cooldown))
-			action.use_ability(passed_arg)
+
+		action.use_ability(passed_arg)
+		if(ability_type == HORDE_MODE_ABILITY_PREATTACK)
+			preattack_move = TRUE
 
 //--------------------------------
 // ATTACKING
@@ -73,10 +132,17 @@
 	if(!COOLDOWN_FINISHED(src, slash_cooldown))
 		return
 
+	if(Adjacent(target_mob))
+		handle_abilities(HORDE_MODE_ABILITY_PREATTACK, target_mob)
+
+	if(preattack_move)
+		return
+
 	COOLDOWN_START(src, slash_cooldown, slash_delay)
 	.  = ..()
+
 	if(.)
-		handle_abilities(HORDE_MODE_ABILITY_ATTACK, target_mob)
+		handle_abilities(HORDE_MODE_ABILITY_POSTATTACK, target_mob)
 
 //--------------------------------
 // STATUS EFFECT HANDLING
@@ -105,6 +171,8 @@
 /mob/living/simple_animal/hostile/alien/horde_mode/Life(delta_time)
 	AdjustKnockDown(-0.1)
 
+	if(preattack_move)
+		preattack_move = FALSE
 	if(length(actions) && stat != DEAD)
 		handle_abilities(HORDE_MODE_ABILITY_ACTIVE)
 
@@ -157,3 +225,16 @@
 
 /mob/living/simple_animal/hostile/alien/horde_mode/get_blood_color()
 	return BLOOD_COLOR_XENO
+
+
+//--------------------------------
+// EXTRA PROCS
+
+/mob/living/simple_animal/hostile/alien/horde_mode/proc/throw_mob(mob/living/target, direction, distance, speed = SPEED_VERY_FAST, shake_camera = TRUE)
+	if(!direction)
+		direction = get_dir(src, target)
+	var/turf/target_destination = get_ranged_target_turf(target, direction, distance)
+
+	target.throw_atom(target_destination, distance, speed, src, spin = TRUE)
+	if(shake_camera)
+		shake_camera(target, 10, 1)
