@@ -1108,6 +1108,37 @@
 /datum/hive_status/tutorial/can_delay_round_end(mob/living/carbon/xenomorph/xeno)
 	return FALSE
 
+/datum/hive_status/horde_mode
+	reporting_id = "horde_mode"
+	hivenumber = XENO_HIVE_HORDEMODE
+
+	construction_allowed = XENO_NOBODY
+	destruction_allowed = XENO_NOBODY
+	dynamic_evolution = FALSE
+	allow_no_queen_actions = TRUE
+	allow_no_queen_evo = FALSE
+	allow_queen_evolve = FALSE
+	latejoin_burrowed = FALSE
+
+/datum/hive_status/horde_mode/can_delay_round_end(mob/living/carbon/xenomorph/xeno)
+	return FALSE
+
+
+/datum/hive_status/horde_mode/corrupted
+	prefix = "Corrupted "
+	color = "#80ff80"
+	ui_color ="#4d994d"
+
+	reporting_id = "horde_mode_corrupted"
+	hivenumber = XENO_HIVE_HORDEMODE_CORRUPTED
+
+/datum/hive_status/horde_mode/corrupted/is_ally(mob/living/carbon/C)
+	if(ishuman(C))
+		return TRUE
+
+	return ..()
+
+
 /datum/hive_status/yautja
 	name = "Hellhound Pack"
 	reporting_id = "hellhounds"

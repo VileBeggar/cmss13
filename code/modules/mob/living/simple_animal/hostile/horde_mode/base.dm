@@ -14,19 +14,35 @@
 	pixel_x = -12
 	old_x = -12
 	langchat_color = "#b491c8"
+	bubble_icon = "alien"
 	mob_size = MOB_SIZE_XENO
+	hivenumber = XENO_HIVE_HORDEMODE
 
+	///Has the mob used a preattack ability?
 	var/preattack_move = FALSE
 	var/strain_icon_path
 	var/strain_icon_state
+	///Is the strain an overlay (drone gardener, healer...) or a full sprite?
 	var/strain_is_overlay = FALSE
+	///Reference to the icon overlay for strains. Mostly used for drone strains.
 	var/mutable_appearance/strain_overlay
 	///List of all actions that the mob is supposed to have. Given during initialization.
 	var/list/base_actions = list()
-	///How long the interval is before the mob is able to attack again.
+	///How long the interval is before the mob is able to use a melee attack again.
 	var/slash_delay = HORDE_MODE_ATTACK_DELAY_NORMAL
-	///Cooldown dictating how long the mob has to wait before being able to attack again.
+	///How long the interval is before the mob is able to use a ranged attack again.
+	var/ranged_delay
+	///The distance at which this mob will attempt to use its ranged attack.
+	var/ranged_distance
+	///How for away the target has to be for the mob to attempt to use its ranged attack.
+	var/ranged_distance_min = 0
+	///The projectile the mob fires for ranged attacks.
+	var/projectile_to_fire
+	var/ranged_sfx = "acid_spit"
+	///Cooldown dictating how long the mob has to wait before being able to use a melee attack.
 	COOLDOWN_DECLARE(slash_cooldown)
+	///Cooldown dictating how long the mob has to wait before being able to use a ranged attack.
+	COOLDOWN_DECLARE(ranged_cooldown)
 
 //--------------------------------
 // INIT AND ICONS
@@ -100,7 +116,8 @@
 				wound_icon_holder.icon_state = "[caste_name]_downed_[health_threshold]"
 		else if(istype(src, /mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest))
 			var/mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest/defender = src
-			if(defender.fortified)
+			var/datum/action/horde_mode_action/steelcrest_fortify/fortify_ability = locate() in defender.actions
+			if(fortify_ability.fortified)
 				wound_icon_holder.icon_state = "[caste_name]_fortify_[health_threshold]"
 			else if (defender.crest_lowered)
 				wound_icon_holder.icon_state = "[caste_name]_crest_[health_threshold]"
@@ -169,12 +186,23 @@
 // LIFE() PROCS
 
 /mob/living/simple_animal/hostile/alien/horde_mode/Life(delta_time)
-	AdjustKnockDown(-0.1)
+	AdjustKnockDown(-0.33)
 
 	if(preattack_move)
 		preattack_move = FALSE
 	if(length(actions) && stat != DEAD)
-		handle_abilities(HORDE_MODE_ABILITY_ACTIVE)
+		handle_abilities(HORDE_MODE_ABILITY_ACTIVE, target_mob)
+
+	if(projectile_to_fire && get_dist(src, target_mob) <= ranged_distance && get_dist(src, target_mob) > ranged_distance_min && COOLDOWN_FINISHED(src, ranged_cooldown) && body_position != LYING_DOWN)
+		var/datum/ammo/projectile_type = GLOB.ammo_list[projectile_to_fire]
+		visible_message(SPAN_XENOWARNING("[src] spits at [target_mob]!"))
+		playsound(loc, ranged_sfx, 25, 1)
+
+		var/obj/projectile/projectile = new /obj/projectile(loc, create_cause_data(src))
+		projectile.generate_bullet(projectile_type)
+		projectile.permutated += src
+		projectile.fire_at(target_mob, src, src, projectile_type.max_range, projectile_type.shell_speed)
+		COOLDOWN_START(src, ranged_cooldown, ranged_delay)
 
 	return ..()
 
@@ -182,10 +210,13 @@
 // MOVEMENT
 
 /mob/living/simple_animal/hostile/alien/horde_mode/MoveToTarget()
-	if(stat == DEAD || HAS_TRAIT(src, TRAIT_INCAPACITATED) || HAS_TRAIT(src, TRAIT_FLOORED))
+	if(stat == DEAD || HAS_TRAIT(src, TRAIT_INCAPACITATED) || HAS_TRAIT(src, TRAIT_FLOORED) || HAS_TRAIT(src, TRAIT_IMMOBILIZED))
 		return
 
 	return ..()
+
+/mob/living/simple_animal/hostile/alien/horde_mode/stop_moving()
+	walk_to(src, 0)
 
 //--------------------------------
 // BLOOD, GUTS AND GIBS
@@ -230,11 +261,11 @@
 //--------------------------------
 // EXTRA PROCS
 
-/mob/living/simple_animal/hostile/alien/horde_mode/proc/throw_mob(mob/living/target, direction, distance, speed = SPEED_VERY_FAST, shake_camera = TRUE)
+/mob/living/simple_animal/hostile/alien/horde_mode/proc/throw_mob(mob/living/target, direction, distance, speed = SPEED_VERY_FAST, shake_camera = TRUE, mob_spin = TRUE)
 	if(!direction)
 		direction = get_dir(src, target)
 	var/turf/target_destination = get_ranged_target_turf(target, direction, distance)
 
-	target.throw_atom(target_destination, distance, speed, src, spin = TRUE)
+	target.throw_atom(target_destination, distance, speed, src, spin = mob_spin)
 	if(shake_camera)
 		shake_camera(target, 10, 1)

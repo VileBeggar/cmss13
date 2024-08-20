@@ -61,7 +61,7 @@
 		to_convert = node.children.Copy()
 
 	xeno.visible_message(SPAN_XENONOTICE("[xeno] regurgitates a pulsating node and plants it on the ground!"))
-	var/obj/effect/alien/weeds/node/new_node = new node_type(xeno.loc, src, xeno)
+	var/obj/effect/alien/weeds/node/new_node = new node_type(xeno.loc, src, hive = GLOB.hive_datum[xeno.hivenumber])
 
 	if(to_convert)
 		for(var/cur_weed in to_convert)
@@ -76,6 +76,41 @@
 /datum/action/horde_mode_action/plant_weeds/weak
 	weed_level = WEED_LEVEL_WEAK
 	node_type = /obj/effect/alien/weeds/node/weak/horde_mode
+
+//--------------------------------
+// RESIN CONSTRUCTION
+
+/datum/action/horde_mode_action/resin_construction
+	cooldown_length = 20 SECONDS
+	var/time_to_construct = 5 SECONDS
+	var/construction_effect = "xeno_telegraph_brown_anim"
+	var/constructed_object = /obj/structure/horde_mode_resin/hive_cluster
+
+/datum/action/horde_mode_action/resin_construction/use_ability()
+	. = ..()
+	apply_cooldown()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	var/obj/effect/resin_construct/con_effect = new(get_step(xeno, xeno.dir))
+	con_effect.icon_state = construction_effect
+	xeno.stop_moving()
+	xeno.visible_message(SPAN_XENODANGER("[xeno] starts regurgitating resin and reshaping it into something..."))
+
+	ADD_TRAIT(xeno, TRAIT_IMMOBILIZED, "resin construction")
+	addtimer(CALLBACK(src, PROC_REF(finish_construction), con_effect), time_to_construct)
+	playsound(xeno.loc, get_sfx("alien_resin_build"), 50, 7)
+
+/datum/action/horde_mode_action/resin_construction/proc/finish_construction(obj/effect/resin_construct/con_effect)
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	REMOVE_TRAIT(xeno, TRAIT_IMMOBILIZED, "resin construction")
+
+	if(xeno.stat == DEAD)
+		qdel(con_effect)
+		return
+
+	playsound(xeno.loc, get_sfx("alien_resin_build"), 50, 7)
+	new constructed_object(con_effect.loc, GLOB.hive_datum[xeno.hivenumber])
+	qdel(con_effect)
+
 
 //--------------------------------
 // HEALING PHEREOS
@@ -120,17 +155,48 @@
 	new /datum/effects/acid(target, src)
 
 //--------------------------------
+// NEURO SLASH
+
+/datum/action/horde_mode_action/neuro_slash
+	ability_type = HORDE_MODE_ABILITY_POSTATTACK
+	cooldown_length = 6 SECONDS
+
+/datum/action/horde_mode_action/neuro_slash/use_ability(mob/living/carbon/human/target)
+	. = ..()
+	if(!ishuman(target) || target.stat == DEAD)
+		return
+
+	target.apply_effect(0.5, SLOW)
+	to_chat(target, SPAN_BOLDWARNING("You feel sluggish as [owner]'s claws inject you with neurotoxin!"))
+
+//--------------------------------
+// NEURO SLASH
+
+/datum/action/horde_mode_action/lifesteal
+	ability_type = HORDE_MODE_ABILITY_POSTATTACK
+	cooldown_length = 0 SECONDS
+	var/heal_amount = 0.2 //precentage
+
+/datum/action/horde_mode_action/lifesteal/use_ability(mob/living/carbon/human/target)
+	. = ..()
+	if(!ishuman(target) || target.stat == DEAD)
+		return
+
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	xeno.health += xeno.maxHealth * heal_amount
+	xeno.flick_heal_overlay(1 SECONDS, "#00B800")
+
+//--------------------------------
 // TAIL SWIPE
 
-/datum/action/horde_mode_action/tail_swipe
-	ability_type = HORDE_MODE_ABILITY_PREATTACK
+/datum/action/horde_mode_action/toss_mob/tail_swipe
 	cooldown_length = 15 SECONDS
+	damage_multiplier = 0.5
 	var/swipe_range = 1
-	var/paralyze = FALSE
-	var/distance = 4
 
-/datum/action/horde_mode_action/tail_swipe/use_ability()
-	. = ..()
+/datum/action/horde_mode_action/toss_mob/tail_swipe/use_ability()
+	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate))
+		return
 
 	apply_cooldown()
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
@@ -146,7 +212,7 @@
 				continue
 
 		var/facing = get_dir(xeno, target)
-		target.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower), BRUTE)
+		target.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower) * damage_multiplier, BRUTE)
 		playsound(target,'sound/weapons/alien_claw_block.ogg', 75, 1)
 		xeno.throw_mob(target, facing, distance)
 		if(paralyze)
@@ -162,6 +228,8 @@
 	var/paralyze = FALSE
 	var/distance = 4
 	var/damage_multiplier = 1
+	var/throw_sound = 'sound/weapons/alien_claw_block.ogg'
+	var/mob_spin = TRUE
 
 /datum/action/horde_mode_action/toss_mob/use_ability(mob/living/target)
 	. = ..()
@@ -178,8 +246,8 @@
 
 	var/facing = get_dir(xeno, target)
 	target.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower) * damage_multiplier, BRUTE)
-	playsound(target,'sound/weapons/alien_claw_block.ogg', 75, 1)
-	xeno.throw_mob(target, facing, distance)
+	playsound(target, throw_sound, 75, 1)
+	xeno.throw_mob(target, facing, distance, mob_spin = mob_spin)
 	if(paralyze)
 		target.apply_effect(1, PARALYZE)
 		target.apply_effect(1, WEAKEN)
@@ -192,29 +260,88 @@
 	. = ..()
 	owner.visible_message(SPAN_XENOWARNING("[owner] rams [target] with its armored crest!"))
 
+/datum/action/horde_mode_action/toss_mob/tail_jab
+	ability_type = HORDE_MODE_ABILITY_ACTIVE
+	damage_multiplier = 1
+	distance = 2
+	throw_sound = 'sound/weapons/alien_tail_attack.ogg'
+	mob_spin = FALSE
+
+/datum/action/horde_mode_action/toss_mob/tail_jab/use_ability(mob/living/target)
+	if(get_dist(owner, target) > 2)
+		return
+	. = ..()
+
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	xeno.visible_message(SPAN_XENOWARNING("[xeno] pierces [target] with its sharp tail!"))
+	xeno.flick_attack_overlay(target, "tail")
+
 
 //--------------------------------
 // STEELCREST FORTIFY
 
 /datum/action/horde_mode_action/steelcrest_fortify
-	ability_type = HORDE_MODE_ABILITY_SPECIAL
 	cooldown_length = 0 SECONDS
+	///Whether the mob is currently fortified or not.
+	var/fortified = FALSE
 
-/datum/action/horde_mode_action/steelcrest_fortify/use_ability()
+/datum/action/horde_mode_action/steelcrest_fortify/use_ability(mob/living/target)
 	. = ..()
-	var/mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest/xeno = owner
-	switch(xeno.fortified)
+	if(get_dist(owner, target) <= 4 && !fortified)
+		fortify()
+
+	else if(get_dist(owner, target) > 4 && fortified)
+		fortify()
+
+/datum/action/horde_mode_action/steelcrest_fortify/proc/fortify()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	fortified = !fortified
+	switch(fortified)
 		if(TRUE)
 			xeno.icon_state = "Steelcrest Defender Walking"
 			xeno.brute_damage_mod = 1
 			xeno.move_to_delay -= HORDE_MODE_SPEED_MOD_MEDIUM
-			xeno.fortified = FALSE
 			xeno.status_flags |= CANSTUN
 			xeno.mob_size = MOB_SIZE_XENO
 		if(FALSE)
 			xeno.icon_state = "Steelcrest Defender Fortify"
 			xeno.brute_damage_mod = 0.66
 			xeno.move_to_delay += HORDE_MODE_SPEED_MOD_MEDIUM
-			xeno.fortified = TRUE
 			xeno.status_flags &= ~CANSTUN
 			xeno.mob_size = MOB_SIZE_BIG
+	xeno.update_wounds()
+
+//--------------------------------
+// RUSH
+
+/datum/action/horde_mode_action/rush
+	cooldown_length = 14 SECONDS
+	var/speed_mod = HORDE_MODE_SPEED_MOD_HIGH
+	var/rush_length = 2 SECONDS
+
+/datum/action/horde_mode_action/rush/use_ability(mob/living/target)
+	. = ..()
+	if(in_range(owner, target))
+		return
+
+	apply_cooldown()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	xeno.emote("roar")
+	var/outline_color = "#FF0000"
+	outline_color += num2text(70, 2, 16)
+
+	xeno.add_filter("outline", 1, outline_filter(size = 0, color = outline_color))
+	xeno.transition_filter("outline", list(size = 2), 2 SECONDS, QUAD_EASING)
+
+	xeno.visible_message(SPAN_DANGER("[xeno] begins to dash forward!"))
+	xeno.move_to_delay -= speed_mod
+	addtimer(CALLBACK(src, PROC_REF(remove_rush), outline_color), rush_length)
+
+
+/datum/action/horde_mode_action/rush/proc/remove_rush(outline_color)
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	outline_color += num2text(35, 2, 16)
+
+	xeno.transition_filter("outline", list(size = 0, color = outline_color), 2 SECONDS, QUAD_EASING)
+	xeno.move_to_delay += speed_mod
+	addtimer(CALLBACK(xeno, TYPE_PROC_REF(/atom/, remove_filter)), 2 SECONDS)

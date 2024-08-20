@@ -1,4 +1,19 @@
 //--------------------------------
+// LESSER DRONE
+
+/mob/living/simple_animal/hostile/alien/horde_mode/lesser_drone
+	name = "Lesser Drone"
+	desc = "An alien drone. Looks... smaller."
+	icon = 'icons/mob/xenos/lesser_drone.dmi'
+	icon_size = 32
+	pixel_x = 0
+	old_x = 0
+	maxHealth = HORDE_MODE_HEALTH_LESSER_DRONE
+	health = HORDE_MODE_HEALTH_LESSER_DRONE
+	melee_damage_upper = HORDE_MODE_DAMAGE_EXTREMELY_LOW
+	melee_damage_lower = HORDE_MODE_DAMAGE_LOW
+
+//--------------------------------
 // DRONE
 
 /mob/living/simple_animal/hostile/alien/horde_mode/drone
@@ -88,10 +103,12 @@
 	melee_damage_lower = HORDE_MODE_DAMAGE_LOW
 	move_to_delay = HORDE_MODE_SPEED_SLOW
 
-	base_actions = list(/datum/action/horde_mode_action/tail_swipe)
+	base_actions = list(/datum/action/horde_mode_action/toss_mob/tail_swipe)
 	status_flags = CANSTUN
 	///How long does the mob have to wait before being able to raise its crest.
 	COOLDOWN_DECLARE(crest_raise)
+	///What icon state is used for lowering the crest.
+	//Though steelcrests will use the fortify ability most of the time, if they're out of fortify range they can still lower their crest.
 	var/crest_icon_state = "Normal Defender Crest"
 	var/crest_lowered = FALSE
 
@@ -116,12 +133,13 @@
 		icon_state = "[caste_name] Dead"
 		return
 
-	icon_state = crest_icon_state
+	update_transform()
 	move_to_delay -= HORDE_MODE_SPEED_MOD_MEDIUM
 
 
 /// STEELCREST
 /mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest
+	desc = "A alien with a fortified crest."
 	strain_icon_path = 'icons/mob/xenos/defender.dmi'
 	strain_icon_state = "Steelcrest Defender"
 
@@ -129,19 +147,22 @@
 	base_actions = list(/datum/action/horde_mode_action/steelcrest_fortify, /datum/action/horde_mode_action/toss_mob/headbutt)
 
 	crest_icon_state = "Steelcrest Defender Crest"
-	var/fortified = FALSE
-	var/datum/action/horde_mode_action/steelcrest_fortify/fortify
 
-/mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest/Initialize()
-	. = ..()
-	fortify = locate() in actions
+//--------------------------------
+// SENTINEL
 
-/mob/living/simple_animal/hostile/alien/horde_mode/defender/steelcrest/Life(delta_time)
-	. = ..()
+/mob/living/simple_animal/hostile/alien/horde_mode/sentinel
+	name = "Sentinel"
+	desc = "A slithery, spitting kind of alien. Its claws drip with potent venom."
+	icon = 'icons/mob/xenos/sentinel.dmi'
 
-	if(stat != DEAD)
-		if(get_dist(src, target_mob) <= 4 && !fortified)
-			fortify.use_ability()
+	melee_damage_upper = HORDE_MODE_DAMAGE_VERY_LOW
+	melee_damage_lower = HORDE_MODE_DAMAGE_VERY_LOW
+	slash_delay = HORDE_MODE_ATTACK_DELAY_SLUGGISH
+	move_to_delay = HORDE_MODE_SPEED_SLOW
 
-		if(get_dist(src, target_mob) > 4 && fortified)
-			fortify.use_ability()
+	base_actions = list(/datum/action/horde_mode_action/neuro_slash)
+
+	projectile_to_fire = /datum/ammo/xeno/acid/neuro
+	ranged_distance = 4
+	ranged_delay = HORDE_MODE_ATTACK_DELAY_SLUGGISH * 2

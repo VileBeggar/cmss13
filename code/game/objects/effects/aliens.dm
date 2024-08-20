@@ -236,6 +236,9 @@
 	else if (isxeno(carbone))
 		..(carbone, FALSE)
 
+/obj/effect/xenomorph/spray/weak/no_stun
+	stun_duration = 0
+
 /obj/effect/xenomorph/spray/strong
 	name = "strong splatter"
 	desc = "It burns a lot!"
