@@ -61,7 +61,7 @@
 		to_convert = node.children.Copy()
 
 	xeno.visible_message(SPAN_XENONOTICE("[xeno] regurgitates a pulsating node and plants it on the ground!"))
-	var/obj/effect/alien/weeds/node/new_node = new node_type(xeno.loc, src, hive = GLOB.hive_datum[xeno.hivenumber])
+	var/obj/effect/alien/weeds/node/new_node = new node_type(xeno.loc, null, null, GLOB.hive_datum[xeno.hivenumber])
 
 	if(to_convert)
 		for(var/cur_weed in to_convert)
@@ -78,38 +78,67 @@
 	node_type = /obj/effect/alien/weeds/node/weak/horde_mode
 
 //--------------------------------
-// RESIN CONSTRUCTION
+// RESIN CONSTRUCTION -- HIVE CLUSTER
 
 /datum/action/horde_mode_action/resin_construction
 	cooldown_length = 20 SECONDS
+	chance_to_activate = 50
 	var/time_to_construct = 5 SECONDS
 	var/construction_effect = "xeno_telegraph_brown_anim"
 	var/constructed_object = /obj/structure/horde_mode_resin/hive_cluster
+	var/required_distance_to_target = 10
+	var/requires_weeds = FALSE
+	var/distance_from_other_buildings = 5
 
 /datum/action/horde_mode_action/resin_construction/use_ability()
 	. = ..()
-	apply_cooldown()
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
-	var/obj/effect/resin_construct/con_effect = new(get_step(xeno, xeno.dir))
+	if(get_dist(xeno, xeno.target_mob) >= 3)
+		return
+
+	if(get_dist(xeno, xeno.target_mob) > required_distance_to_target || xeno.max_buildings <= 0)
+		return
+
+	for(var/obj/structure/horde_mode_resin/resin_structure in range(distance_from_other_buildings, xeno))
+		return
+
+	var/turf/construction_turf = get_turf(get_step(xeno, xeno.dir))
+	if(requires_weeds && !(locate(/obj/effect/alien/weeds) in construction_turf) || construction_turf.density || construction_turf.opacity)
+		return
+
+	for(var/obj/object in construction_turf)
+		if(object.density || istype(object, /obj/structure/horde_mode_resin))
+			return
+
+	apply_cooldown()
+
+	var/obj/effect/resin_construct/con_effect = new(construction_turf)
 	con_effect.icon_state = construction_effect
 	xeno.stop_moving()
 	xeno.visible_message(SPAN_XENODANGER("[xeno] starts regurgitating resin and reshaping it into something..."))
 
 	ADD_TRAIT(xeno, TRAIT_IMMOBILIZED, "resin construction")
-	addtimer(CALLBACK(src, PROC_REF(finish_construction), con_effect), time_to_construct)
-	playsound(xeno.loc, get_sfx("alien_resin_build"), 50, 7)
+	playsound(xeno.loc, get_sfx("alien_resin_build"), 50)
 
-/datum/action/horde_mode_action/resin_construction/proc/finish_construction(obj/effect/resin_construct/con_effect)
-	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
-	REMOVE_TRAIT(xeno, TRAIT_IMMOBILIZED, "resin construction")
-
-	if(xeno.stat == DEAD)
+	if(!do_after(xeno, time_to_construct))
+		REMOVE_TRAIT(xeno, TRAIT_IMMOBILIZED, "resin construction")
 		qdel(con_effect)
 		return
 
-	playsound(xeno.loc, get_sfx("alien_resin_build"), 50, 7)
-	new constructed_object(con_effect.loc, GLOB.hive_datum[xeno.hivenumber])
+	REMOVE_TRAIT(xeno, TRAIT_IMMOBILIZED, "resin construction")
+	playsound(xeno.loc, get_sfx("alien_resin_build"), 50)
+	xeno.max_buildings--
+	new constructed_object(construction_turf, GLOB.hive_datum[xeno.hivenumber])
 	qdel(con_effect)
+
+//--------------------------------
+// RESIN CONSTRUCTION -- RECOVERY NODE
+
+/datum/action/horde_mode_action/resin_construction/recovery
+	cooldown_length = 20 SECONDS
+	chance_to_activate = 75
+	constructed_object = /obj/structure/horde_mode_resin/recovery
+	requires_weeds = TRUE
 
 
 //--------------------------------
@@ -133,6 +162,9 @@
 				to_chat(friendly_human, SPAN_HELPFUL("[owner]'s pheromones appear to be closing your wounds!"))
 			else
 				surrounding_mob.health += surrounding_mob.maxHealth * heal_strength
+				if(isanimalhordemode(surrounding_mob))
+					var/mob/living/simple_animal/hostile/alien/horde_mode/alien = surrounding_mob
+					alien.update_wounds()
 			surrounding_mob.flick_heal_overlay(3 SECONDS, "#D9F500")
 	apply_cooldown()
 

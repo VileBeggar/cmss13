@@ -1,3 +1,5 @@
+#define WEED_HEAL_FACTOR 0.05
+
 /mob/living/simple_animal/hostile/alien/horde_mode
 	icon = 'icons/mob/xenos/drone.dmi'
 	icon_gib = "gibbed-a"
@@ -28,6 +30,8 @@
 	var/mutable_appearance/strain_overlay
 	///List of all actions that the mob is supposed to have. Given during initialization.
 	var/list/base_actions = list()
+	///Temporary var for how many buildings the mob can build.
+	var/max_buildings = 6
 	///How long the interval is before the mob is able to use a melee attack again.
 	var/slash_delay = HORDE_MODE_ATTACK_DELAY_NORMAL
 	///How long the interval is before the mob is able to use a ranged attack again.
@@ -38,6 +42,7 @@
 	var/ranged_distance_min = 0
 	///The projectile the mob fires for ranged attacks.
 	var/projectile_to_fire
+	///SFX when a projectile gets fired.
 	var/ranged_sfx = "acid_spit"
 	///Cooldown dictating how long the mob has to wait before being able to use a melee attack.
 	COOLDOWN_DECLARE(slash_cooldown)
@@ -186,13 +191,17 @@
 // LIFE() PROCS
 
 /mob/living/simple_animal/hostile/alien/horde_mode/Life(delta_time)
-	AdjustKnockDown(-0.33)
+	AdjustKnockDown(-0.5)
+
+	if(locate(/obj/effect/alien/weeds) in loc)
+		health += maxHealth * WEED_HEAL_FACTOR
 
 	if(preattack_move)
 		preattack_move = FALSE
 	if(length(actions) && stat != DEAD)
 		handle_abilities(HORDE_MODE_ABILITY_ACTIVE, target_mob)
 
+	//handling ranged attacks
 	if(projectile_to_fire && get_dist(src, target_mob) <= ranged_distance && get_dist(src, target_mob) > ranged_distance_min && COOLDOWN_FINISHED(src, ranged_cooldown) && body_position != LYING_DOWN)
 		var/datum/ammo/projectile_type = GLOB.ammo_list[projectile_to_fire]
 		visible_message(SPAN_XENOWARNING("[src] spits at [target_mob]!"))
@@ -269,3 +278,5 @@
 	target.throw_atom(target_destination, distance, speed, src, spin = mob_spin)
 	if(shake_camera)
 		shake_camera(target, 10, 1)
+
+#undef WEED_HEAL_FACTOR

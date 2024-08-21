@@ -593,6 +593,15 @@
 	slow_multiplier = 0.5
 	decay_speed = 2 SECONDS
 
+/obj/effect/alien/weeds/node/horde_mode/cluster
+	health = WEED_HEALTH_HIVE
+	weed_strength = WEED_LEVEL_HIVE
+	node_range = WEED_RANGE_PYLON
+	overlay_node = FALSE
+	spread_on_semiweedable = TRUE
+	slow_multiplier = 0.05
+	var/resin_parent
+
 /obj/effect/alien/weeds/node/weak/horde_mode
 	slow_multiplier = 0.75
 	decay_speed = 2 SECONDS

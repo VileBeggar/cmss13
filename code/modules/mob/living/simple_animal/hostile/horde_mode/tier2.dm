@@ -59,8 +59,13 @@
 	desc = "A builder of really big hives."
 	icon = 'icons/mob/xenos/hivelord.dmi'
 
+	health = HORDE_MODE_HEALTH_HIGH
+	maxHealth = HORDE_MODE_HEALTH_HIGH
+	melee_damage_lower = HORDE_MODE_DAMAGE_LOW
+	move_to_delay = HORDE_MODE_SPEED_VERY_SLOW
+
 	icon_size = 64
 	pixel_x = -16
 	old_x = -16
 	status_flags = CANPUSH
-	base_actions = list(/datum/action/horde_mode_action/plant_weeds, /datum/action/horde_mode_action/resin_construction)
+	base_actions = list(/datum/action/horde_mode_action/plant_weeds, /datum/action/horde_mode_action/resin_construction, /datum/action/horde_mode_action/resin_construction/recovery)
