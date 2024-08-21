@@ -33,6 +33,7 @@
 
 	var/has_hud = FALSE
 	var/headset_hud_on = FALSE
+	var/has_tracker = FALSE
 	var/locate_setting = TRACKER_SL
 	var/misc_tracking = FALSE
 	var/hud_type = MOB_HUD_FACTION_MARINE
@@ -56,7 +57,8 @@
 	if(has_hud)
 		headset_hud_on = TRUE
 		verbs += /obj/item/device/radio/headset/proc/toggle_squadhud
-		verbs += /obj/item/device/radio/headset/proc/switch_tracker_target
+	if(has_tracker)
+		verbs += /obj/item/device/proc/switch_tracker_target
 
 	if(frequency)
 		for(var/cycled_channel in GLOB.radiochannels)
@@ -240,7 +242,7 @@
 			var/datum/mob_hud/H = GLOB.huds[hud_type]
 			H.add_hud_to(user, src)
 			//squad leader locator is no longer invisible on our player HUD.
-			if(user.mind && (user.assigned_squad || misc_tracking) && user.hud_used && user.hud_used.locate_leader)
+			if(user.mind && (user.assigned_squad || misc_tracking) && user.hud_used && user.hud_used.locate_leader && has_tracker)
 				user.show_hud_tracker()
 			if(misc_tracking)
 				SStracking.start_misc_tracking(user)
@@ -306,7 +308,7 @@
 	to_chat(usr, SPAN_NOTICE("You toggle [src]'s headset HUD [headset_hud_on ? "on":"off"]."))
 	playsound(src,'sound/machines/click.ogg', 20, 1)
 
-/obj/item/device/radio/headset/proc/switch_tracker_target()
+/obj/item/device/proc/switch_tracker_target()
 	set name = "Switch Tracker Target"
 	set category = "Object"
 	set src in usr
@@ -316,12 +318,16 @@
 
 	handle_switching_tracker_target(usr)
 
-/obj/item/device/radio/headset/proc/handle_switching_tracker_target(mob/living/carbon/human/user)
-	var/new_track = tgui_input_list(user, "Choose a new tracking target.", "Tracking Selection", tracking_options)
+/obj/item/device/proc/handle_switching_tracker_target(mob/living/carbon/human/user)
+	if(!is_type_in_list(src, list(/obj/item/device/radio/headset, /obj/item/device/helmet_visor)))
+		return
+
+	var/obj/item/device/radio/headset/tracker_item = src
+	var/new_track = tgui_input_list(user, "Choose a new tracking target.", "Tracking Selection", tracker_item.tracking_options)
 	if(!new_track)
 		return
-	to_chat(user, SPAN_NOTICE("You set your headset's tracker to point to <b>[new_track]</b>."))
-	locate_setting = tracking_options[new_track]
+	to_chat(user, SPAN_NOTICE("You set your tracker to point to <b>[new_track]</b>."))
+	tracker_item.locate_setting = tracker_item.tracking_options[new_track]
 
 /obj/item/device/radio/headset/proc/update_minimap_icon()
 	SIGNAL_HANDLER
@@ -394,7 +400,8 @@
 	icon_state = "generic_headset"
 	item_state = "headset"
 	frequency = PUB_FREQ
-	has_hud = TRUE
+	has_hud = FALSE //tracker hud is handled by squad helmet visors
+	has_tracker = TRUE
 
 /obj/item/device/radio/headset/almayer/verb/enter_tree()
 	set name = "Enter Techtree"
@@ -881,6 +888,7 @@
 	icon_state = "pmc_headset"
 	initial_keys = list(/obj/item/device/encryptionkey/public, /obj/item/device/encryptionkey/mcom/cl)
 	has_hud = TRUE
+	has_tracker = TRUE
 	hud_type = MOB_HUD_FACTION_PMC
 
 	misc_tracking = TRUE
@@ -896,6 +904,7 @@
 	initial_keys = list(/obj/item/device/encryptionkey/public, /obj/item/device/encryptionkey/mcom)
 	ignore_z = TRUE
 	has_hud = TRUE
+	has_tracker = TRUE
 
 /obj/item/device/radio/headset/distress/forecon
 	name = "\improper Force Recon headset"
@@ -904,6 +913,7 @@
 	initial_keys = list(/obj/item/device/encryptionkey/public, /obj/item/device/encryptionkey/mcom)
 	ignore_z = TRUE
 	has_hud = TRUE
+	has_tracker = TRUE
 
 /obj/item/device/radio/headset/distress/pmc/hvh
 	desc = "A special headset used by corporate personnel. Channels are as follows: :o - colony."
@@ -953,6 +963,7 @@
 	frequency = UPP_FREQ
 	initial_keys = list(/obj/item/device/encryptionkey/colony)
 	has_hud = TRUE
+	has_tracker = TRUE
 	hud_type = MOB_HUD_FACTION_UPP
 
 /obj/item/device/radio/headset/distress/UPP/cct
@@ -992,6 +1003,7 @@
 	frequency = CLF_FREQ
 	initial_keys = list(/obj/item/device/encryptionkey/colony)
 	has_hud = TRUE
+	has_tracker = TRUE
 	hud_type = MOB_HUD_FACTION_CLF
 
 /obj/item/device/radio/headset/distress/CLF/cct
@@ -1023,6 +1035,7 @@
 	icon_state = "vai_headset"
 	initial_keys = list(/obj/item/device/encryptionkey/public, /obj/item/device/encryptionkey/contractor)
 	has_hud = TRUE
+	has_tracker = TRUE
 
 /obj/item/device/radio/headset/distress/royal_marine
 	name = "Royal Marine Headset"
@@ -1031,6 +1044,7 @@
 	icon_state = "vai_headset"
 	initial_keys = list(/obj/item/device/encryptionkey/public, /obj/item/device/encryptionkey/royal_marine)
 	has_hud = TRUE
+	has_tracker = TRUE
 	hud_type = MOB_HUD_FACTION_TWE
 	volume = RADIO_VOLUME_IMPORTANT
 
@@ -1042,6 +1056,7 @@
 	icon_state = "cmb_headset"
 	initial_keys = list(/obj/item/device/encryptionkey/cmb)
 	has_hud = TRUE
+	has_tracker = TRUE
 	hud_type = MOB_HUD_FACTION_MARINE
 
 /obj/item/device/radio/headset/distress/CMB/limited
@@ -1087,6 +1102,7 @@
 	initial_keys = list(/obj/item/device/encryptionkey/soc/forecon)
 	volume = RADIO_VOLUME_QUIET
 	has_hud = TRUE
+	has_tracker = TRUE
 	hud_type = MOB_HUD_FACTION_MARINE
 
 /obj/item/device/radio/headset/almayer/mcom/vc
@@ -1104,4 +1120,5 @@
 	volume = RADIO_VOLUME_QUIET
 	ignore_z = FALSE
 	has_hud = TRUE
+	has_tracker = TRUE
 	hud_type = MOB_HUD_FACTION_UPP

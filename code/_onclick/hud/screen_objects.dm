@@ -456,6 +456,12 @@
 /atom/movable/screen/squad_leader_locator/clicked(mob/living/carbon/human/user, mods)
 	if(!istype(user))
 		return
+
+	var/obj/item/device/helmet_visor/visor = locate() in user.head
+	if(visor.has_tracker)
+		handle_visor(user, mods, visor)
+		return
+
 	var/obj/item/device/radio/headset/earpiece = user.get_type_in_ears(/obj/item/device/radio/headset)
 	var/has_access = earpiece.misc_tracking || (user.assigned_squad && user.assigned_squad.radio_freq == earpiece.frequency)
 	if(!istype(earpiece) || !earpiece.has_hud || !has_access)
@@ -467,6 +473,19 @@
 		return
 	else if(mods["alt"])
 		earpiece.switch_tracker_target()
+		return
+	if(user.get_active_hand())
+		return
+	if(user.assigned_squad)
+		user.assigned_squad.tgui_interact(user)
+
+/atom/movable/screen/squad_leader_locator/proc/handle_visor(mob/living/carbon/human/user, mods, obj/item/device/helmet_visor/visor)
+	if(mods["shift"])
+		var/area/current_area = get_area(user)
+		to_chat(user, SPAN_NOTICE("You are currently at: <b>[current_area.name]</b>."))
+		return
+	else if(mods["alt"])
+		visor.switch_tracker_target()
 		return
 	if(user.get_active_hand())
 		return
