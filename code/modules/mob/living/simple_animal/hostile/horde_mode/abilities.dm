@@ -3,10 +3,11 @@
 	var/cooldown_length = 4 SECONDS
 	var/ability_type = HORDE_MODE_ABILITY_ACTIVE
 	var/chance_to_activate = 100
+	var/required_distance_to_target = 0
 	COOLDOWN_DECLARE(ability_cooldown)
 
-/datum/action/horde_mode_action/proc/use_ability()
-	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate))
+/datum/action/horde_mode_action/proc/use_ability(mob/living/target)
+	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate) || get_dist(owner, target) > required_distance_to_target)
 		return
 
 /datum/action/horde_mode_action/proc/apply_cooldown()
@@ -22,7 +23,7 @@
 	var/weed_level = WEED_LEVEL_STANDARD
 	var/node_type = /obj/effect/alien/weeds/node/horde_mode
 
-/datum/action/horde_mode_action/plant_weeds/use_ability()
+/datum/action/horde_mode_action/plant_weeds/use_ability(mob/living/target)
 	. = ..()
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	var/turf/turf = xeno.loc
@@ -61,7 +62,7 @@
 		to_convert = node.children.Copy()
 
 	xeno.visible_message(SPAN_XENONOTICE("[xeno] regurgitates a pulsating node and plants it on the ground!"))
-	var/obj/effect/alien/weeds/node/new_node = new node_type(xeno.loc, null, null, GLOB.hive_datum[xeno.hivenumber])
+	var/obj/effect/alien/weeds/node/new_node = new node_type(xeno.loc, null, null, xeno.hive)
 
 	if(to_convert)
 		for(var/cur_weed in to_convert)
@@ -83,20 +84,17 @@
 /datum/action/horde_mode_action/resin_construction
 	cooldown_length = 20 SECONDS
 	chance_to_activate = 50
+	required_distance_to_target = 10
 	var/time_to_construct = 5 SECONDS
 	var/construction_effect = "xeno_telegraph_brown_anim"
 	var/constructed_object = /obj/structure/horde_mode_resin/hive_cluster
-	var/required_distance_to_target = 10
 	var/requires_weeds = FALSE
 	var/distance_from_other_buildings = 5
 
-/datum/action/horde_mode_action/resin_construction/use_ability()
+/datum/action/horde_mode_action/resin_construction/use_ability(mob/living/target)
 	. = ..()
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
-	if(get_dist(xeno, xeno.target_mob) >= 3)
-		return
-
-	if(get_dist(xeno, xeno.target_mob) > required_distance_to_target || xeno.max_buildings <= 0)
+	if(get_dist(xeno, target) >= 3 || xeno.max_buildings <= 0)
 		return
 
 	for(var/obj/structure/horde_mode_resin/resin_structure in range(distance_from_other_buildings, xeno))
@@ -128,7 +126,7 @@
 	REMOVE_TRAIT(xeno, TRAIT_IMMOBILIZED, "resin construction")
 	playsound(xeno.loc, get_sfx("alien_resin_build"), 50)
 	xeno.max_buildings--
-	new constructed_object(construction_turf, GLOB.hive_datum[xeno.hivenumber])
+	new constructed_object(construction_turf, xeno.hive)
 	qdel(con_effect)
 
 //--------------------------------
@@ -150,7 +148,7 @@
 	var/heal_strength_human = 0.05
 	var/heal_range = 4
 
-/datum/action/horde_mode_action/heal/use_ability()
+/datum/action/horde_mode_action/heal/use_ability(mob/living/target)
 	. = ..()
 	owner.visible_message(SPAN_XENOBOLDNOTICE("[owner] starts emitting healing pheromones..."))
 	for(var/mob/living/surrounding_mob in view(heal_range, owner))
@@ -246,7 +244,7 @@
 		var/facing = get_dir(xeno, target)
 		target.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower) * damage_multiplier, BRUTE)
 		playsound(target,'sound/weapons/alien_claw_block.ogg', 75, 1)
-		xeno.throw_mob(target, facing, distance)
+		xeno.throw_mob(target, facing, throw_distance)
 		if(paralyze)
 			target.apply_effect(1, PARALYZE)
 			target.apply_effect(1, WEAKEN)
@@ -258,7 +256,7 @@
 	ability_type = HORDE_MODE_ABILITY_PREATTACK
 	cooldown_length = 10 SECONDS
 	var/paralyze = FALSE
-	var/distance = 4
+	var/throw_distance = 4
 	var/damage_multiplier = 1
 	var/throw_sound = 'sound/weapons/alien_claw_block.ogg'
 	var/mob_spin = TRUE
@@ -279,14 +277,14 @@
 	var/facing = get_dir(xeno, target)
 	target.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower) * damage_multiplier, BRUTE)
 	playsound(target, throw_sound, 75, 1)
-	xeno.throw_mob(target, facing, distance, mob_spin = mob_spin)
+	xeno.throw_mob(target, facing, throw_distance, mob_spin = mob_spin)
 	if(paralyze)
 		target.apply_effect(1, PARALYZE)
 		target.apply_effect(1, WEAKEN)
 
 /datum/action/horde_mode_action/toss_mob/headbutt
 	damage_multiplier = 0.33
-	distance = 2
+	throw_distance = 2
 
 /datum/action/horde_mode_action/toss_mob/headbutt/use_ability(mob/living/target)
 	. = ..()
@@ -295,15 +293,13 @@
 /datum/action/horde_mode_action/toss_mob/tail_jab
 	ability_type = HORDE_MODE_ABILITY_ACTIVE
 	damage_multiplier = 1
-	distance = 2
+	throw_distance = 2
+	required_distance_to_target = 2
 	throw_sound = 'sound/weapons/alien_tail_attack.ogg'
 	mob_spin = FALSE
 
 /datum/action/horde_mode_action/toss_mob/tail_jab/use_ability(mob/living/target)
-	if(get_dist(owner, target) > 2)
-		return
 	. = ..()
-
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	xeno.visible_message(SPAN_XENOWARNING("[xeno] pierces [target] with its sharp tail!"))
 	xeno.flick_attack_overlay(target, "tail")
@@ -377,3 +373,32 @@
 	xeno.transition_filter("outline", list(size = 0, color = outline_color), 2 SECONDS, QUAD_EASING)
 	xeno.move_to_delay += speed_mod
 	addtimer(CALLBACK(xeno, TYPE_PROC_REF(/atom/, remove_filter)), 2 SECONDS)
+
+//--------------------------------
+// TREMOR
+
+/datum/action/horde_mode_action/tremor
+	cooldown_length = 16 SECONDS
+	required_distance_to_target = 3
+
+/datum/action/horde_mode_action/tremor/use_ability(mob/living/target)
+	. = ..()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	playsound(xeno.loc, 'sound/effects/alien_footstep_charge3.ogg', 50, 0)
+	xeno.visible_message(SPAN_XENODANGER("[xeno] digs itself into the ground and shakes the earth itself, causing violent tremors!"))
+	xeno.create_stomp()
+	apply_cooldown()
+
+	for(var/mob/living/carbon/carbon_target in range(5, xeno.loc))
+		if(xeno.hive.is_ally(carbon_target))
+			continue
+		to_chat(carbon_target, SPAN_WARNING("You struggle to remain on your feet as the ground shakes beneath your feet!"))
+		shake_camera(carbon_target, 2, 3)
+		switch(get_dist(xeno, carbon_target))
+			if(0 to 2)
+				carbon_target.apply_effect(2, SLOW)
+				shake_camera(carbon_target, 5, 4)
+			if(2 to 5)
+				carbon_target.apply_effect(1, SLOW)
+				shake_camera(carbon_target, 2, 3)
+

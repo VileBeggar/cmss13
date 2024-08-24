@@ -1,4 +1,5 @@
 #define WEED_HEAL_FACTOR 0.05
+#define OVERLAY_EFFECT_LAYER 8
 
 /mob/living/simple_animal/hostile/alien/horde_mode
 	icon = 'icons/mob/xenos/drone.dmi'
@@ -20,6 +21,10 @@
 	mob_size = MOB_SIZE_XENO
 	hivenumber = XENO_HIVE_HORDEMODE
 
+	///A list of all currently displayed mob effects.
+	var/list/effect_images = list()
+	///Which hive this mob belongs to.
+	var/datum/hive_status/hive
 	///Has the mob used a preattack ability?
 	var/preattack_move = FALSE
 	var/strain_icon_path
@@ -53,6 +58,7 @@
 // INIT AND ICONS
 
 /mob/living/simple_animal/hostile/alien/horde_mode/Initialize()
+	hive = GLOB.hive_datum[hivenumber]
 	langchat_height = icon_size
 	add_abilities()
 	if(strain_icon_state && strain_is_overlay)
@@ -193,7 +199,8 @@
 /mob/living/simple_animal/hostile/alien/horde_mode/Life(delta_time)
 	AdjustKnockDown(-0.5)
 
-	if(locate(/obj/effect/alien/weeds) in loc)
+	var/obj/effect/alien/weeds/weed = locate() in loc
+	if(weed?.hivenumber == hivenumber)
 		health += maxHealth * WEED_HEAL_FACTOR
 
 	if(preattack_move)
@@ -279,4 +286,20 @@
 	if(shake_camera)
 		shake_camera(target, 10, 1)
 
+
+/mob/living/simple_animal/hostile/alien/horde_mode/proc/create_stomp()
+	remove_effect_layer()
+
+	var/image/overlay = image("icon"='icons/mob/xenos/overlay_effects64x64.dmi', "icon_state" = "stomp", "layer" = OVERLAY_EFFECT_LAYER)
+	effect_images += overlay
+	overlays += overlay
+	addtimer(CALLBACK(src, PROC_REF(remove_effect_layer)), 1 SECONDS)
+
+/mob/living/simple_animal/hostile/alien/horde_mode/proc/remove_effect_layer()
+	for(var/image/effect_overlay in effect_images)
+		overlays -= effect_overlay
+		effect_images -= effect_overlay
+		qdel(effect_overlay)
+
 #undef WEED_HEAL_FACTOR
+#undef OVERLAY_EFFECT_LAYER

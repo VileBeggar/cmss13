@@ -59,6 +59,7 @@
 	desc = "A builder of really big hives."
 	icon = 'icons/mob/xenos/hivelord.dmi'
 
+	mob_size = MOB_SIZE_BIG
 	health = HORDE_MODE_HEALTH_HIGH
 	maxHealth = HORDE_MODE_HEALTH_HIGH
 	melee_damage_lower = HORDE_MODE_DAMAGE_LOW
@@ -69,3 +70,23 @@
 	old_x = -16
 	status_flags = CANPUSH
 	base_actions = list(/datum/action/horde_mode_action/plant_weeds, /datum/action/horde_mode_action/resin_construction, /datum/action/horde_mode_action/resin_construction/recovery)
+
+
+//--------------------------------
+// Burrower
+
+/mob/living/simple_animal/hostile/alien/horde_mode/burrower
+	name = "Burrower"
+	desc = "A beefy alien with sharp claws."
+	icon = 'icons/mob/xenos/burrower.dmi'
+
+	health = HORDE_MODE_HEALTH_HIGH
+	maxHealth = HORDE_MODE_HEALTH_HIGH
+	melee_damage_upper = HORDE_MODE_DAMAGE_MEDIUM
+	move_to_delay = HORDE_MODE_SPEED_VERY_SLOW
+
+	icon_size = 64
+	pixel_x = -16
+	old_x = -16
+	//todo: add tunnel construction
+	base_actions = list(/datum/action/horde_mode_action/tremor)
