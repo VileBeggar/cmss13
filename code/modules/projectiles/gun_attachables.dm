@@ -2259,18 +2259,6 @@ Defined in conflicts.dm of the #defines folder.
 	pixel_shift_y = 16
 	hud_offset_mod = 10 //A sprite long enough to touch the Moon.
 
-/obj/item/attachable/stock/m6b
-	name = "\improper M6B exhaust"
-	desc = "This isn't supposed to be separated from the gun, how'd this happen?"
-	icon_state = "m6b_stock_a"
-	attach_icon = "m6b_stock_a"
-	wield_delay_mod = WIELD_DELAY_NONE
-	flags_attach_features = NO_FLAGS
-	hud_offset_mod = 3
-
-/obj/item/attachable/stock/m6b/New()//no stats, its cosmetic
-	..()
-
 /obj/item/attachable/m4ra_barrel
 	name = "M4RA barrel"
 	desc = "This isn't supposed to be separated from the gun, how'd this happen?"
