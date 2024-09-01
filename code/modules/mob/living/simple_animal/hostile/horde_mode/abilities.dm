@@ -7,7 +7,7 @@
 	COOLDOWN_DECLARE(ability_cooldown)
 
 /datum/action/horde_mode_action/proc/use_ability(mob/living/target)
-	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate) || get_dist(owner, target) > required_distance_to_target)
+	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate) || get_dist(owner, target) > required_distance_to_target || owner.body_position == LYING_DOWN)
 		return
 
 /datum/action/horde_mode_action/proc/apply_cooldown()
@@ -305,6 +305,33 @@
 	xeno.flick_attack_overlay(target, "tail")
 
 
+
+
+//--------------------------------
+// LURKER INVISBILITY
+
+/datum/action/horde_mode_action/invisibility
+	cooldown_length = 0 SECONDS
+	///What speed the mob will move at when invisible
+	var/invisbility_speed = HORDE_MODE_SPEED_INSANELY_FAST
+	///Mob's alpha level whe invisible
+	var/invisibility_alpha = 50
+
+/datum/action/horde_mode_action/invisibility/use_ability(mob/living/target)
+	. = ..()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	if(get_dist(xeno, target) > 6)
+		xeno.move_to_delay = invisbility_speed
+	else
+		xeno.move_to_delay = HORDE_MODE_SPEED_NORMAL
+
+	//once we're up close and personal, drop the cloak. otherwise keep being invisible
+	if(xeno.stat == DEAD || get_dist(xeno, target) <= 2)
+		xeno.alpha = initial(xeno.alpha)
+	else
+		xeno.alpha = invisibility_alpha
+
+
 //--------------------------------
 // STEELCREST FORTIFY
 
@@ -344,8 +371,11 @@
 
 /datum/action/horde_mode_action/rush
 	cooldown_length = 14 SECONDS
+	required_distance_to_target = 7
 	var/speed_mod = HORDE_MODE_SPEED_MOD_HIGH
 	var/rush_length = 2 SECONDS
+	var/has_footstep = FALSE
+	var/footstep_sound = "alien_footstep_large"
 
 /datum/action/horde_mode_action/rush/use_ability(mob/living/target)
 	. = ..()
@@ -358,6 +388,9 @@
 	var/outline_color = "#FF0000"
 	outline_color += num2text(70, 2, 16)
 
+	if(has_footstep)
+		xeno.AddComponent(/datum/component/footstep, 2 , 35, 11, 4, footstep_sound)
+
 	xeno.add_filter("outline", 1, outline_filter(size = 0, color = outline_color))
 	xeno.transition_filter("outline", list(size = 2), 2 SECONDS, QUAD_EASING)
 
@@ -368,11 +401,48 @@
 
 /datum/action/horde_mode_action/rush/proc/remove_rush(outline_color)
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	if(!xeno.get_filter("outline"))
+		return
+
 	outline_color += num2text(35, 2, 16)
+	if(has_footstep)
+		qdel(xeno.GetComponent(/datum/component/footstep))
 
 	xeno.transition_filter("outline", list(size = 0, color = outline_color), 2 SECONDS, QUAD_EASING)
 	xeno.move_to_delay += speed_mod
 	addtimer(CALLBACK(xeno, TYPE_PROC_REF(/atom/, remove_filter)), 2 SECONDS)
+
+
+// CHARGE
+
+/datum/action/horde_mode_action/rush/charge
+	has_footstep = TRUE
+	rush_length = 4 SECONDS
+	speed_mod = HORDE_MODE_SPEED_MOD_EXTREMELY_HIGH
+	var/stop_rush_on_hit = TRUE
+
+/datum/action/horde_mode_action/rush/charge/use_ability(mob/living/target)
+	. = ..()
+	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(handle_movement), override = TRUE)
+
+/datum/action/horde_mode_action/rush/charge/remove_rush(outline_color)
+	. = ..()
+	UnregisterSignal(owner, COMSIG_MOVABLE_MOVED)
+
+/datum/action/horde_mode_action/rush/charge/proc/handle_movement()
+	SIGNAL_HANDLER_DOES_SLEEP
+
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	for(var/mob/living/nearby_mob in range(1, xeno))
+		if(xeno.hive.is_ally(nearby_mob) || nearby_mob == DEAD)
+			continue
+		var/facing = get_dir(xeno, nearby_mob)
+		nearby_mob.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower), BRUTE)
+		playsound(nearby_mob, 'sound/weapons/alien_claw_block.ogg', 75, 1)
+		xeno.throw_mob(nearby_mob, facing, 4, SPEED_REALLY_FAST)
+		if(stop_rush_on_hit)
+			remove_rush()
+
 
 //--------------------------------
 // TREMOR

@@ -110,12 +110,11 @@
 	desc = "An experimental pistol model designed to replace the aging M4A3. Even though it uses the same caliber as its predecessor, it packs a heavier punch and a kick with it due to greater muzzle velocity."
 	icon = 'icons/obj/items/weapons/guns/guns_by_faction/uscm.dmi'
 	icon_state = "m4a4"
-	item_state = "highpower_tac"
 	fire_sound = "gun_m4a4"
 	current_mag = /obj/item/ammo_magazine/pistol/hp
 
 /obj/item/weapon/gun/pistol/m4a3/m4a4/set_gun_attachment_offsets()
-	attachable_offset = list("muzzle_x" = 29, "muzzle_y" = 21, "rail_x" = 1, "rail_y" = 24, "under_x" = 21, "under_y" = 17, "stock_x" = 21, "stock_y" = 17)
+	attachable_offset = list("muzzle_x" = 29, "muzzle_y" = 21,"rail_x" = 1, "rail_y" = 24, "under_x" = 21, "under_y" = 17, "stock_x" = 21, "stock_y" = 17)
 
 /obj/item/weapon/gun/pistol/m4a3/m4a4/set_gun_config_values()
 	..()

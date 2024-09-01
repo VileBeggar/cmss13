@@ -7,24 +7,9 @@
 	icon = 'icons/mob/xenos/lurker.dmi'
 	melee_damage_upper = HORDE_MODE_DAMAGE_MEDIUM
 	melee_damage_lower = HORDE_MODE_DAMAGE_MEDIUM
-	var/invisibility_alpha = 50
+	base_actions = list(/datum/action/horde_mode_action/invisibility)
 
-/mob/living/simple_animal/hostile/alien/horde_mode/lurker/Life(delta_time)
-	if(!strain_icon_state) //check if mob is a vampire lurker
-		//if the target is far away, start chasing at extremely fast speeds
-		if(get_dist(src, target_mob) > 6)
-			move_to_delay = HORDE_MODE_SPEED_INSANELY_FAST
-		else
-			move_to_delay = HORDE_MODE_SPEED_NORMAL
-
-		//once we're up close and personal, drop the cloak. otherwise keep being invisible
-		if(stat == DEAD || get_dist(src, target_mob) <= 2)
-			alpha = initial(alpha)
-		else
-			alpha = invisibility_alpha
-
-	return ..()
-
+// VAMPIRE
 /mob/living/simple_animal/hostile/alien/horde_mode/lurker/vampire
 	desc = "A fast alien with sharp claws, and a intense thirst for blood."
 	strain_icon_path = 'icons/mob/xenos/lurker.dmi'
@@ -51,6 +36,7 @@
 	ranged_distance_min = 2
 	ranged_delay = HORDE_MODE_ATTACK_DELAY_SLUGGISH * 2
 
+
 //--------------------------------
 // HIVELORD
 
@@ -73,7 +59,7 @@
 
 
 //--------------------------------
-// Burrower
+// BURROWER
 
 /mob/living/simple_animal/hostile/alien/horde_mode/burrower
 	name = "Burrower"
@@ -90,3 +76,5 @@
 	old_x = -16
 	//todo: add tunnel construction
 	base_actions = list(/datum/action/horde_mode_action/tremor)
+
+// CARRIERS btfo :(

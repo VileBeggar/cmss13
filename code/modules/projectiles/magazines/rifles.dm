@@ -283,16 +283,6 @@
 	ammo_band_color = AMMO_BAND_COLOR_HEAP
 
 //-------------------------------------------------------
-//M41AE3 HEAVY PULSE RIFLE
-
-/obj/item/ammo_magazine/rifle/lmg/m41ae3
-	name = "\improper M41AE3 ammo box (10x24mm)"
-	desc = "A semi-rectangular box of rounds for the M41AE3 Heavy Pulse Rifle."
-	icon_state = "m41ae3"
-	max_rounds = 125
-	gun_type = /obj/item/weapon/gun/rifle/lmg/m41ae3
-
-//-------------------------------------------------------
 //UPP TYPE 71 RIFLE
 
 /obj/item/ammo_magazine/rifle/type71
