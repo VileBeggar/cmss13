@@ -146,10 +146,10 @@
 
 /mob/living/simple_animal/hostile/alien/horde_mode/proc/handle_abilities(ability_type, passed_arg)
 	for(var/datum/action/horde_mode_action/action in actions)
-		if(stat == DEAD || body_position == LYING_DOWN || action.ability_type != ability_type || !COOLDOWN_FINISHED(action, ability_cooldown))
+		if(stat == DEAD || body_position == LYING_DOWN || action.ability_type != ability_type || !action.can_use_ability(passed_arg))
 			continue
 
-		action.use_ability(passed_arg)
+		INVOKE_ASYNC(action, TYPE_PROC_REF(/datum/action/horde_mode_action, use_ability), passed_arg)
 		if(ability_type == HORDE_MODE_ABILITY_PREATTACK)
 			preattack_move = TRUE
 
@@ -278,6 +278,9 @@
 // EXTRA PROCS
 
 /mob/living/simple_animal/hostile/alien/horde_mode/proc/throw_mob(mob/living/target, direction, distance, speed = SPEED_VERY_FAST, shake_camera = TRUE, mob_spin = TRUE)
+	if(target.mob_size >= MOB_SIZE_BIG)
+		return
+
 	if(!direction)
 		direction = get_dir(src, target)
 	var/turf/target_destination = get_ranged_target_turf(target, direction, distance)
@@ -300,6 +303,38 @@
 		overlays -= effect_overlay
 		effect_images -= effect_overlay
 		qdel(effect_overlay)
+
+//TURN INTO CORRUPTED
+/////////////////////
+/mob/living/simple_animal/hostile/alien/horde_mode/proc/turn_corrupt()
+	make_jittery(105)
+	sleep(1 SECONDS)
+
+	LoseTarget()
+
+	visible_message(SPAN_XENOHIGHDANGER("[src] falls to the ground, its limbs and head twitching erradically in horrid pain!"))
+	playsound(loc, "alien_help", 25, 1)
+	manual_emote("writhes in pain!")
+	animate(src, time = 4 SECONDS, easing = QUAD_EASING, color = "#80ff80")
+
+	melee_damage_upper *= 2
+	melee_damage_lower *= 2
+	move_to_delay *= 0.8
+	maxHealth *= 1.5
+
+	apply_effect(5, WEAKEN)
+	apply_effect(5, PARALYZE)
+
+	health = maxHealth
+	flick_heal_overlay(3 SECONDS, "#D9F500")
+
+	faction = FACTION_MARINE
+	faction_group = FACTION_LIST_MARINE
+	hivenumber = XENO_HIVE_CORRUPTED
+	hive = GLOB.hive_datum[hivenumber]
+	name = "Corrupted [initial(name)] (XX-[rand(1, 999)])"
+	langchat_color = "#80ff80"
+
 
 #undef WEED_HEAL_FACTOR
 #undef OVERLAY_EFFECT_LAYER

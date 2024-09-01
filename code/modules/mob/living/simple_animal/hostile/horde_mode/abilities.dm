@@ -6,9 +6,12 @@
 	var/required_distance_to_target = 0
 	COOLDOWN_DECLARE(ability_cooldown)
 
+/datum/action/horde_mode_action/proc/can_use_ability(mob/living/target)
+	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate) || (required_distance_to_target > 0 && !target) || (target && get_dist(owner, target) > required_distance_to_target) || HAS_TRAIT(owner, TRAIT_IMMOBILIZED))
+		return FALSE
+	return TRUE
+
 /datum/action/horde_mode_action/proc/use_ability(mob/living/target)
-	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate) || get_dist(owner, target) > required_distance_to_target || owner.body_position == LYING_DOWN)
-		return
 
 /datum/action/horde_mode_action/proc/apply_cooldown()
 	COOLDOWN_START(src, ability_cooldown, cooldown_length)
@@ -24,7 +27,9 @@
 	var/node_type = /obj/effect/alien/weeds/node/horde_mode
 
 /datum/action/horde_mode_action/plant_weeds/use_ability(mob/living/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	var/turf/turf = xeno.loc
 	if(!istype(turf) || turf.density || !turf.is_weedable())
@@ -92,7 +97,9 @@
 	var/distance_from_other_buildings = 5
 
 /datum/action/horde_mode_action/resin_construction/use_ability(mob/living/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	if(get_dist(xeno, target) >= 3 || xeno.max_buildings <= 0)
 		return
@@ -149,7 +156,9 @@
 	var/heal_range = 4
 
 /datum/action/horde_mode_action/heal/use_ability(mob/living/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	owner.visible_message(SPAN_XENOBOLDNOTICE("[owner] starts emitting healing pheromones..."))
 	for(var/mob/living/surrounding_mob in view(heal_range, owner))
 		if(surrounding_mob.faction == owner.faction)
@@ -174,7 +183,9 @@
 	ability_type = HORDE_MODE_ABILITY_POSTATTACK
 
 /datum/action/horde_mode_action/acid_slash/use_ability(mob/living/carbon/human/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	if(!ishuman(target) || target.stat == DEAD)
 		return
 
@@ -192,7 +203,9 @@
 	cooldown_length = 6 SECONDS
 
 /datum/action/horde_mode_action/neuro_slash/use_ability(mob/living/carbon/human/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	if(!ishuman(target) || target.stat == DEAD)
 		return
 
@@ -208,7 +221,9 @@
 	var/heal_amount = 0.2 //precentage
 
 /datum/action/horde_mode_action/lifesteal/use_ability(mob/living/carbon/human/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	if(!ishuman(target) || target.stat == DEAD)
 		return
 
@@ -225,7 +240,7 @@
 	var/swipe_range = 1
 
 /datum/action/horde_mode_action/toss_mob/tail_swipe/use_ability()
-	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate))
+	if(!can_use_ability(target))
 		return
 
 	apply_cooldown()
@@ -262,7 +277,8 @@
 	var/mob_spin = TRUE
 
 /datum/action/horde_mode_action/toss_mob/use_ability(mob/living/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
 
 	apply_cooldown()
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
@@ -282,6 +298,7 @@
 		target.apply_effect(1, PARALYZE)
 		target.apply_effect(1, WEAKEN)
 
+// HEADSTAB
 /datum/action/horde_mode_action/toss_mob/headbutt
 	damage_multiplier = 0.33
 	throw_distance = 2
@@ -290,6 +307,20 @@
 	. = ..()
 	owner.visible_message(SPAN_XENOWARNING("[owner] rams [target] with its armored crest!"))
 
+// CLOTHESLINE
+/datum/action/horde_mode_action/toss_mob/clothesline
+	cooldown_length = 4 SECONDS
+	damage_multiplier = 0.66
+	throw_distance = 4
+
+/datum/action/horde_mode_action/toss_mob/clothesline/use_ability(mob/living/target)
+	. = ..()
+	owner.visible_message(SPAN_XENOWARNING("[owner] clotheslines [target]!"))
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	xeno.health += xeno.maxHealth * 0.05
+	xeno.flick_heal_overlay(1 SECONDS, "#00B800")
+
+// TAIL STAB
 /datum/action/horde_mode_action/toss_mob/tail_jab
 	ability_type = HORDE_MODE_ABILITY_ACTIVE
 	damage_multiplier = 1
@@ -304,9 +335,6 @@
 	xeno.visible_message(SPAN_XENOWARNING("[xeno] pierces [target] with its sharp tail!"))
 	xeno.flick_attack_overlay(target, "tail")
 
-
-
-
 //--------------------------------
 // LURKER INVISBILITY
 
@@ -318,7 +346,9 @@
 	var/invisibility_alpha = 50
 
 /datum/action/horde_mode_action/invisibility/use_ability(mob/living/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	if(get_dist(xeno, target) > 6)
 		xeno.move_to_delay = invisbility_speed
@@ -341,7 +371,9 @@
 	var/fortified = FALSE
 
 /datum/action/horde_mode_action/steelcrest_fortify/use_ability(mob/living/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	if(get_dist(owner, target) <= 4 && !fortified)
 		fortify()
 
@@ -376,46 +408,52 @@
 	var/rush_length = 2 SECONDS
 	var/has_footstep = FALSE
 	var/footstep_sound = "alien_footstep_large"
+	var/timer_id = VV_NULL
 
 /datum/action/horde_mode_action/rush/use_ability(mob/living/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	if(in_range(owner, target))
 		return
 
 	apply_cooldown()
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	xeno.emote("roar")
+
 	var/outline_color = "#FF0000"
 	outline_color += num2text(70, 2, 16)
+	timer_id = addtimer(CALLBACK(src, PROC_REF(remove_rush), outline_color), rush_length, TIMER_STOPPABLE)
 
 	if(has_footstep)
 		xeno.AddComponent(/datum/component/footstep, 2 , 35, 11, 4, footstep_sound)
 
-	xeno.add_filter("outline", 1, outline_filter(size = 0, color = outline_color))
-	xeno.transition_filter("outline", list(size = 2), 2 SECONDS, QUAD_EASING)
+	xeno.add_filter("outline_rush", 1, outline_filter(size = 0, color = outline_color))
+	xeno.transition_filter("outline_rush", list(size = 2), 2 SECONDS, QUAD_EASING)
 
 	xeno.visible_message(SPAN_DANGER("[xeno] begins to dash forward!"))
 	xeno.move_to_delay -= speed_mod
-	addtimer(CALLBACK(src, PROC_REF(remove_rush), outline_color), rush_length)
-
 
 /datum/action/horde_mode_action/rush/proc/remove_rush(outline_color)
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
-	if(!xeno.get_filter("outline"))
-		return
-
-	outline_color += num2text(35, 2, 16)
 	if(has_footstep)
 		qdel(xeno.GetComponent(/datum/component/footstep))
 
-	xeno.transition_filter("outline", list(size = 0, color = outline_color), 2 SECONDS, QUAD_EASING)
 	xeno.move_to_delay += speed_mod
-	addtimer(CALLBACK(xeno, TYPE_PROC_REF(/atom/, remove_filter)), 2 SECONDS)
+
+	if(!xeno.get_filter("outline_rush"))
+		return
+
+	outline_color += num2text(35, 2, 16)
+	xeno.transition_filter("outline_rush", list(size = 0, color = outline_color), 2 SECONDS, QUAD_EASING)
+	sleep(2 SECONDS)
+	xeno.remove_filter("outline_rush")
 
 
 // CHARGE
 
 /datum/action/horde_mode_action/rush/charge
+	cooldown_length = 6 SECONDS
 	has_footstep = TRUE
 	rush_length = 4 SECONDS
 	speed_mod = HORDE_MODE_SPEED_MOD_EXTREMELY_HIGH
@@ -433,7 +471,7 @@
 	SIGNAL_HANDLER_DOES_SLEEP
 
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
-	for(var/mob/living/nearby_mob in range(1, xeno))
+	for(var/mob/living/nearby_mob in orange(1, xeno))
 		if(xeno.hive.is_ally(nearby_mob) || nearby_mob == DEAD)
 			continue
 		var/facing = get_dir(xeno, nearby_mob)
@@ -442,7 +480,9 @@
 		xeno.throw_mob(nearby_mob, facing, 4, SPEED_REALLY_FAST)
 		if(stop_rush_on_hit)
 			remove_rush()
-
+			deltimer(timer_id)
+			timer_id = null
+			break
 
 //--------------------------------
 // TREMOR
@@ -452,7 +492,9 @@
 	required_distance_to_target = 3
 
 /datum/action/horde_mode_action/tremor/use_ability(mob/living/target)
-	. = ..()
+	if(!can_use_ability(target))
+		return
+
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	playsound(xeno.loc, 'sound/effects/alien_footstep_charge3.ogg', 50, 0)
 	xeno.visible_message(SPAN_XENODANGER("[xeno] digs itself into the ground and shakes the earth itself, causing violent tremors!"))
@@ -472,3 +514,128 @@
 				carbon_target.apply_effect(1, SLOW)
 				shake_camera(carbon_target, 2, 3)
 
+//--------------------------------
+// EVISCERATE
+
+/datum/action/horde_mode_action/eviscerate
+	cooldown_length = 10 SECONDS
+	required_distance_to_target = 3
+
+/datum/action/horde_mode_action/eviscerate/can_use_ability(mob/living/target)
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	if(xeno.get_filter("outline_rush"))
+		return FALSE
+	return ..()
+
+/datum/action/horde_mode_action/eviscerate/use_ability(mob/living/target)
+	if(!can_use_ability(target))
+		return
+
+	apply_cooldown()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	xeno.manual_emote("roars!")
+	xeno.visible_message(SPAN_XENOHIGHDANGER("[xeno] lets out a massive roar as it starts eviscerating everything in its proximity!"))
+	playsound(xeno, 'sound/voice/alien_heavy_roar.ogg', 75, 1)
+	ADD_TRAIT(xeno, TRAIT_IMMOBILIZED, TRAIT_SOURCE_ABILITY("Eviscerate"))
+	xeno.anchored = TRUE
+
+	var/list/effect_tiles = list()
+
+	for(var/turf/affected_turf in (orange(3, owner) - orange(2, owner)))
+		var/obj/effect/xenomorph/xeno_telegraph/red/telegraph_effect = new(affected_turf, 10 SECONDS)
+		effect_tiles += telegraph_effect
+
+	for(var/times_to_attack = 3, times_to_attack > 0, times_to_attack--)
+		xeno.spin_circle(2)
+		for(var/mob/living/victim in range(xeno, 3))
+			if(xeno.body_position == LYING_DOWN)
+				break
+			if(xeno.hive.is_ally(victim))
+				continue
+			victim.apply_effect(0.5, WEAKEN)
+			victim.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower) * 0.25, BRUTE)
+			playsound(victim, "alien_claw_flesh", 75, 1)
+			shake_camera(victim, 2, 3)
+			xeno.flick_attack_overlay(victim, "slash")
+			victim.handle_blood_splatter(get_dir(xeno.loc, victim.loc))
+			if(prob(15))
+				xeno.throw_mob(victim, get_dir(xeno, target), 2, mob_spin = FALSE)
+			sleep(rand(0.1 SECONDS, 0.15 SECONDS))
+		sleep(0.2 SECONDS)
+
+	for(var/effect in effect_tiles)
+		qdel(effect)
+
+	REMOVE_TRAIT(xeno, TRAIT_IMMOBILIZED, TRAIT_SOURCE_ABILITY("Eviscerate"))
+	xeno.anchored = FALSE
+
+//--------------------------------
+// SCISSOR CUT
+
+/datum/action/horde_mode_action/scissor_cut
+	cooldown_length = 6 SECONDS
+	required_distance_to_target = 2
+
+/datum/action/horde_mode_action/scissor_cut/use_ability(mob/living/target)
+	if(!can_use_ability(target))
+		return
+
+	apply_cooldown()
+	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+
+	// Transient turf list
+	var/list/target_turfs = list()
+	var/list/temp_turfs = list()
+	var/list/telegraph_atom_list = list()
+
+	// Code to get a 2x3 area of turfs
+	var/turf/root = get_turf(xeno)
+	var/facing = Get_Compass_Dir(xeno, target)
+	var/turf/infront = get_step(root, facing)
+	var/turf/left = get_step(root, turn(facing, 90))
+	var/turf/right = get_step(root, turn(facing, -90))
+	var/turf/infront_left = get_step(root, turn(facing, 45))
+	var/turf/infront_right = get_step(root, turn(facing, -45))
+	temp_turfs += infront
+
+	if(!(!infront || infront.density) && !(!left || left.density))
+		temp_turfs += infront_left
+	if(!(!infront || infront.density) && !(!right || right.density))
+		temp_turfs += infront_right
+
+	for(var/turf/turf in temp_turfs)
+		if(!istype(turf))
+			continue
+
+		if(turf.density)
+			continue
+
+		target_turfs += turf
+		telegraph_atom_list += new /obj/effect/xenomorph/xeno_telegraph/red(turf, 0.25 SECONDS)
+
+		var/turf/next_turf = get_step(turf, facing)
+		if(!istype(next_turf) || next_turf.density)
+			continue
+
+		target_turfs += next_turf
+		telegraph_atom_list += new /obj/effect/xenomorph/xeno_telegraph/red(next_turf, 0.25 SECONDS)
+
+	if(!length(target_turfs))
+		return
+
+	// Get list of target mobs
+	var/list/target_mobs = list()
+
+	for(var/turf/path_turf as anything in target_turfs)
+		for(var/mob/living/victim in path_turf.contents)
+			if(xeno.hive.is_ally(victim))
+				continue
+
+			if(!(victim in target_mobs))
+				target_mobs += victim
+
+	for(var/mob/living/victim in target_mobs)
+		victim.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower), BRUTE)
+		playsound(victim, "alien_claw_flesh", 75, 1)
+		xeno.flick_attack_overlay(victim, "slash")
+		victim.handle_blood_splatter(get_dir(xeno.loc, victim.loc))
