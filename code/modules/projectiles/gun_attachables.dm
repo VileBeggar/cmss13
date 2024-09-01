@@ -1948,27 +1948,6 @@ Defined in conflicts.dm of the #defines folder.
 	aim_speed_mod = 0
 	wield_delay_mod = WIELD_DELAY_NONE
 
-/obj/item/attachable/stock/m37a3
-	name = "M37A3 stock"
-	desc = "The non-detachable stock of a M37A3 pump shotgun."
-	icon_state = "m37a3_stock_a"
-	flags_attach_features = NO_FLAGS
-	hud_offset_mod = 6
-	melee_mod = 10
-
-/obj/item/attachable/stock/m37a3/New()
-	..()
-
-/obj/item/attachable/stock/china_lake
-	name = "China Lake stock"
-	desc = "The non-detachable stock of a China Lake grenade launcher."
-	icon_state = "china_lake_stock_a"
-	flags_attach_features = NO_FLAGS
-	hud_offset_mod = 6
-
-/obj/item/attachable/stock/china_lake/New()
-	..()
-
 /obj/item/attachable/stock/hg3712/m3717
 	name = "hg3717 stock"
 	desc = "The non-detachable stock of a M37-17 pump shotgun."

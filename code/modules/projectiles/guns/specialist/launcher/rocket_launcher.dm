@@ -374,247 +374,127 @@
 			C.apply_effect(6, STUTTER)
 			C.emote("pain")
 
-//-------------------------------------------------------
-//M6B Rocket Launcher -- AVP2 weapon
-//not a true subtype of rocket launcher due to unique behaviour
 
-/obj/item/weapon/gun/launcher/m6b
+//-------------------------------------------------------
+//M6B Rocket Launcher
+
+/obj/item/weapon/gun/launcher/rocket/m6b
 	name = "\improper M6B rocket launcher"
 	desc = "The M6B rocket launcher is the big brother to the M5 RPG. It has a capacity of 3 rockets, and with the capability to switch between unguided and guided rockets, the M6B is one of the USCM's most powerful single-shot weapons in their arsenal."
 	icon = 'icons/obj/items/weapons/guns/guns_by_faction/uscm.dmi'
 	icon_state = "m6b"
 	item_state = "m6b"
 
+	current_mag = /obj/item/ammo_magazine/internal/m6b
 	starting_attachment_types = list(/obj/item/attachable/stock/m6b)
-	attachable_allowed = list(
-		/obj/item/attachable/magnetic_harness,
-		/obj/item/attachable/stock/m6b,
-	)
-	actions_types = list(/datum/action/item_action/m6b_guided_shot)
+	skill_locked = FALSE
 	has_empty_icon = TRUE
 
-	reload_sound = 'sound/weapons/handling/m79_reload.ogg'
-	unload_sound = 'sound/weapons/handling/m79_unload.ogg'
-	fire_sound = null //sfx is handled by the bullet_effect() proc due to needing the VARY variable set to true
-
-	has_cylinder = TRUE
-	preload = /obj/item/ammo_magazine/rocket
-	internal_max_w_class = SIZE_MEDIUM //MEDIUM = M15.
-	internal_slots = 3
-	direct_draw = FALSE
-
-	flags_gun_features = GUN_WIELDED_FIRING_ONLY|GUN_UNUSUAL_DESIGN
+	flags_gun_features = GUN_WIELDED_FIRING_ONLY|GUN_INTERNAL_MAG
 	flags_item = TWOHANDED
-
-
-	///How long it takes for a guided missile to get fired.
 	var/aiming_time = 2 SECONDS
-	///How long it takes for the user to fire another guided shot.
 	var/guided_shot_cooldown_delay = 3.5 SECONDS
-	///Smoke effect for fired rockets.
-	var/datum/effect_system/smoke_spread/smoke
 
-	///GFX for guided shot lock-ons.
 	var/guided_lockon_icon = "sniper_lockon"
-	///GFX for guided shot beam.
 	var/obj/effect/ebeam/sniper_beam_type = /obj/effect/ebeam/laser
 	var/guided_beam_icon = "laser_beam"
 
-	///Cooldown for the guided missile ability.
 	COOLDOWN_DECLARE(guided_shot_cooldown)
 
-/obj/item/weapon/gun/launcher/m6b/set_gun_config_values()
-	..()
-	set_fire_delay(FIRE_DELAY_TIER_6*2)
-	accuracy_mult = BASE_ACCURACY_MULT
-	scatter = SCATTER_AMOUNT_TIER_6
-	damage_mult = BASE_BULLET_DAMAGE_MULT
-	recoil = RECOIL_AMOUNT_TIER_3
-
-/obj/item/weapon/gun/launcher/m6b/Initialize(mapload, spawn_empty)
+/obj/item/weapon/gun/launcher/rocket/m6b/Initialize(mapload, spawn_empty)
+	LAZYADD(actions_types, /datum/action/item_action/m6b_guided_shot)
 	. = ..()
-	smoke = new()
-	smoke.attach(src)
+	current_mag.chamber_contents = list()
+	current_mag.chamber_contents.len = current_mag.max_rounds
+	for(var/i = 1 to current_mag.max_rounds) //We want to make sure to populate the tube.
+		current_mag.chamber_contents[i] = "empty"
+	current_mag.chamber_position = 0
+	current_mag.current_rounds = 0
+	update_icon()
 
-/obj/item/weapon/gun/launcher/m6b/Destroy()
-	QDEL_NULL(smoke)
-	return ..()
-
-/obj/item/weapon/gun/launcher/m6b/set_gun_attachment_offsets()
-	attachable_offset = list("muzzle_x" = 33, "muzzle_y" = 18,"rail_x" = 6, "rail_y" = 19, "under_x" = 19, "under_y" = 14, "stock_x" = 18, "stock_y" = 14)
-
-/obj/item/weapon/gun/launcher/m6b/update_icon()
-	..()
-	var/GL_sprite = base_gun_icon
-	if(cylinder && !length(cylinder.contents) )
-		GL_sprite += "_e"
-	icon_state = GL_sprite
-
-//loading rockets into the launcher
-/obj/item/weapon/gun/launcher/m6b/on_pocket_attackby(obj/item/ammo_magazine/rocket, mob/user)
-	if(!istype(rocket))
-		to_chat(user, SPAN_WARNING("You can't load [rocket] into [src]!"))
-		return
-	if(length(cylinder.contents) >= internal_slots)
-		to_chat(user, SPAN_WARNING("[src] cannot hold more rockets!"))
-		return
-	if(!cylinder.can_be_inserted(rocket, user)) //Technically includes whether there's room for it, but the above gives a tailored message.
+/obj/item/weapon/gun/launcher/rocket/m6b/reload(mob/user, obj/item/ammo_magazine/rocket)
+	if(!current_mag || flags_gun_features & GUN_BURST_FIRING || !user)
 		return
 
-	to_chat(user, SPAN_NOTICE("You begin loading [rocket] into [src]. Hold still..."))
+	if(!rocket || !istype(rocket) || !istype(src, rocket.gun_type))
+		to_chat(user, SPAN_WARNING("That's not going to fit!"))
+		return
+
+	if(current_mag.current_rounds == current_mag.max_rounds)
+		to_chat(user, SPAN_WARNING("[src] is already loaded to max capacity!"))
+		return
+
+	to_chat(user, SPAN_NOTICE("You begin reloading [src]. Hold still..."))
 	if(!do_after(user, 1.5 SECONDS, INTERRUPT_ALL, BUSY_ICON_FRIENDLY))
 		to_chat(user, SPAN_WARNING("Your reload was interrupted!"))
 		return
 
-	to_chat(user, SPAN_INFO("Now storing: [length(cylinder.contents) + 1] / [internal_slots] rockets."))
-	playsound(usr, reload_sound, 75, 1)
-	cylinder.handle_item_insertion(rocket, TRUE, user)
+	current_mag.current_rounds++
+	current_mag.chamber_position++
+	current_mag.chamber_contents[current_mag.chamber_position] = rocket.default_ammo
+	if(!in_chamber)
+		reload_into_chamber()
 
-///Proc for turning the fired rocket into a spent shell.
-/obj/item/weapon/gun/launcher/m6b/proc/expend_rocket()
-	var/obj/item/ammo_magazine/rocket/rocket_in_chamber = cylinder?.contents[1]
-	if(!rocket_in_chamber)
+	to_chat(user, SPAN_NOTICE("You load [rocket] into [src]."))
+	qdel(rocket)
+	playsound(user, 'sound/weapons/grenade_insert.wav', 25, 1)
+	return TRUE
+
+/obj/item/weapon/gun/launcher/rocket/m6b/proc/ready_internal_mag()
+	if(isnull(current_mag) || !length(current_mag.chamber_contents) || in_chamber || current_mag.current_rounds < 0)
 		return
 
-	var/obj/item/ammo_magazine/rocket/new_rocket = new rocket_in_chamber.type()
-	//if there's ever another type of custom rocket ammo this logic should just be moved into a function on the rocket
-	if(istype(new_rocket, /obj/item/ammo_magazine/rocket/custom))
-		var/obj/item/ammo_magazine/rocket/custom/custom_rocket = new_rocket
-		var/obj/item/ammo_magazine/rocket/custom/custom_rocket_in_chamber = rocket_in_chamber
-		//set the custom rocket variables here.
-		custom_rocket.contents = custom_rocket_in_chamber.contents
-		custom_rocket.desc = custom_rocket_in_chamber.desc
-		custom_rocket.fuel = custom_rocket_in_chamber.fuel
-		custom_rocket.icon_state = custom_rocket_in_chamber.icon_state
-		custom_rocket.warhead = custom_rocket_in_chamber.warhead
-		custom_rocket.locked = custom_rocket_in_chamber.locked
-		custom_rocket.name = custom_rocket_in_chamber.name
-		custom_rocket.filters = custom_rocket_in_chamber.filters
-
-	new_rocket.current_rounds = 0
-	new_rocket.forceMove(get_turf(src)) //Drop it on the ground.
-	new_rocket.update_icon()
-	qdel(rocket_in_chamber)
-	update_icon()
-
-//handles the backblast
-/obj/item/weapon/gun/launcher/m6b/apply_bullet_effects(obj/projectile/projectile_to_fire, mob/user, i = 1, reflex = 0)
-	. = ..()
-	if(!HAS_TRAIT(user, TRAIT_EAR_PROTECTION) && ishuman(user))
-		var/mob/living/carbon/human/huser = user
-		to_chat(user, SPAN_WARNING("Augh!! \The [src]'s launch blast resonates extremely loudly in your ears! You probably should have worn some sort of ear protection..."))
-		huser.apply_effect(6, STUTTER)
-		huser.emote("pain")
-		huser.SetEarDeafness(max(user.ear_deaf,10))
-
-	var/backblast_loc = get_turf(get_step(user.loc, turn(user.dir, 180)))
-	smoke.set_up(1, 0, backblast_loc, turn(user.dir, 180))
-	smoke.start()
-	playsound(src, 'sound/weapons/gun_rocketlauncher.ogg', 100, TRUE, 10)
-	for(var/mob/living/carbon/mob in backblast_loc)
-		if(mob.body_position != STANDING_UP || HAS_TRAIT(mob, TRAIT_EAR_PROTECTION)) //Have to be standing up to get the fun stuff
-			continue
-		to_chat(mob, SPAN_BOLDWARNING("You got hit by the backblast!"))
-		mob.apply_damage(15, BRUTE) //The shockwave hurts, quite a bit. It can knock unarmored targets unconscious in real life
-		var/knockdown_amount = 6
-		if(isxeno(mob))
-			var/mob/living/carbon/xenomorph/xeno = mob
-			knockdown_amount = knockdown_amount * (1 - xeno.caste?.xeno_explosion_resistance / 100)
-		mob.KnockDown(knockdown_amount)
-		mob.apply_effect(6, STUTTER)
-		mob.emote("pain")
-	to_chat(user, SPAN_INFO("Now storing: [length(cylinder.contents) - 1] / [internal_slots] rockets."))
-
-//convert the first loaded rocket into the respective bullet datum
-/obj/item/weapon/gun/launcher/m6b/load_into_chamber()
-	var/obj/item/ammo_magazine/rocket/rocket_in_chamber = cylinder?.contents[1]
-	if(!rocket_in_chamber)
-		return
-
-	QDEL_NULL(in_chamber)
-	in_chamber = create_bullet(GLOB.ammo_list[rocket_in_chamber.default_ammo], initial(name))
-	apply_traits(in_chamber)
-	expend_rocket()
+	ammo = GLOB.ammo_list[current_mag.chamber_contents[current_mag.chamber_position]]
+	in_chamber = create_bullet(ammo, initial(name))
+	current_mag.current_rounds--
+	current_mag.chamber_contents[current_mag.chamber_position] = "empty"
+	current_mag.chamber_position--
 	return in_chamber
 
-//not needed for this type of weapon
-/obj/item/weapon/gun/launcher/m6b/reload_into_chamber()
+/obj/item/weapon/gun/launcher/rocket/m6b/ready_in_chamber()
+	return ready_internal_mag()
+
+/obj/item/weapon/gun/launcher/rocket/m6b/load_into_chamber(mob/user)
+	return in_chamber
+
+/obj/item/weapon/gun/launcher/rocket/m6b/reload_into_chamber(mob/user)
+	in_chamber = null
+	//Time to move the internal_mag position.
+	ready_in_chamber() //We're going to try and reload. If we don't get anything, icon change.
+	if(!in_chamber)
+		update_icon()
+
+	return TRUE
+
+/obj/item/weapon/gun/launcher/rocket/m6b/make_rocket(mob/user, drop_override = 0, empty = 1)
 	return
 
-/obj/item/weapon/gun/launcher/m6b/on_pocket_insertion()
-	playsound(usr, reload_sound, 25, 1)
-	update_icon()
+/obj/item/weapon/gun/launcher/rocket/m6b/set_gun_attachment_offsets()
+	attachable_offset = list("muzzle_x" = 33, "muzzle_y" = 18,"rail_x" = 6, "rail_y" = 19, "under_x" = 19, "under_y" = 14, "stock_x" = 18, "stock_y" = 14)
 
-/obj/item/weapon/gun/launcher/m6b/on_pocket_removal()
-	update_icon()
-
-/obj/item/weapon/gun/launcher/m6b/on_pocket_open(first_open)
-	playsound(usr, reload_sound, 25, 1)
-
-/obj/item/weapon/gun/launcher/m6b/get_examine_text(mob/user)
-	. = ..()
-	if(get_dist(user, src) > 2 && user != loc)
-		return
-	if(length(cylinder.contents))
-		. += SPAN_NOTICE("It is loaded with <b>[length(cylinder.contents)] / [internal_slots]</b> rockets.")
-	else
-		. += SPAN_NOTICE("It is empty.")
-
-//Need to have the rocket launcher in your hands to open the cylinder.
-/obj/item/weapon/gun/launcher/m6b/attack_hand(mob/user)
-	if(src != user.get_inactive_hand())
-		return ..()
-	if(cylinder.handle_attack_hand(user))
-		..()
-
-/obj/item/weapon/gun/launcher/m6b/unload(mob/user, reload_override = FALSE, drop_override = FALSE, loc_override = FALSE)
-	if(!length(cylinder.contents))
-		to_chat(user, SPAN_WARNING("It's empty!"))
-		return
-
-	var/obj/item/ammo_magazine/rocket/rocket = cylinder.contents[length(cylinder.contents)] //Grab the last-inserted one. Or the only one, as the case may be.
-	cylinder.remove_from_storage(rocket, user.loc)
-
-	if(drop_override || !user)
-		rocket.forceMove(get_turf(src))
-	else
-		user.put_in_hands(rocket)
-
-	user.visible_message(SPAN_NOTICE("[user] unloads [rocket] from [src]."),
-	SPAN_NOTICE("You unload [rocket] from [src]."), null, 4, CHAT_TYPE_COMBAT_ACTION)
-	playsound(user, unload_sound, 30, 1)
-
-/obj/item/weapon/gun/launcher/m6b/attackby(obj/item/I, mob/user)
-	if(istype(I,/obj/item/attachable) && check_inactive_hand(user))
-		attach_to_gun(user, I)
-		return
-	return cylinder.attackby(I, user)
-
-/obj/item/weapon/gun/launcher/m6b/unique_action(mob/user)
-	var/datum/action/item_action/m6b_guided_shot/guided_shot = locate(/datum/action/item_action/m6b_guided_shot) in actions
-	guided_shot.use_ability()
-
-//-----------------------
-// GUIDED MISSLE ABILITY
 
 /datum/action/item_action/m6b_guided_shot
-	var/obj/item/weapon/gun/launcher/m6b/rocket_launcher
+	var/obj/item/weapon/gun/launcher/rocket/m6b/rocket_launcher
 
+// todo: switch this to unique action
 /datum/action/item_action/m6b_guided_shot/New(mob/living/user, obj/item/holder)
 	..()
 	rocket_launcher = holder_item
-	name = "Toggle Guided Missiles"
+	name = "Switch to Guided Missiles"
 	button.name = name
 	button.overlays.Cut()
 	var/image/IMG = image('icons/mob/hud/actions.dmi', button, "guided_shot")
 	button.overlays += IMG
 
+/*
+		ACTIONS SPECIALSIT SNIPER CAN TAKE
+*/
 /datum/action/item_action/m6b_guided_shot/action_activate()
 	. = ..()
 	if(!ishuman(owner))
 		return
 	var/mob/living/carbon/human/H = owner
-	playsound(owner, 'sound/effects/sebb_beep.ogg', 25)
+	playsound(owner, 'sound/effects/nightvision.ogg', 25)
 	if(H.selected_ability == src)
 		to_chat(H, SPAN_NOTICE("[rocket_launcher] is now set to utilize guided missiles with \
 			[H.client && H.client.prefs && H.client.prefs.toggle_prefs & TOGGLE_MIDDLE_MOUSE_CLICK ? "middle-click" : "shift-click"]."))
@@ -661,6 +541,10 @@
 	lockon_icon.pixel_y = y_offset
 	target.overlays += lockon_icon
 
+	var/image/lockon_direction_icon = image(icon = 'icons/effects/Targeted.dmi', icon_state = "[lockon]_direction", dir = get_cardinal_dir(target, human))
+	lockon_direction_icon.pixel_x = x_offset
+	lockon_direction_icon.pixel_y = y_offset
+	target.overlays += lockon_direction_icon
 	if(human.client)
 		playsound_client(human.client, 'sound/effects/nightvision.ogg', human, 50)
 	playsound(target, 'sound/effects/nightvision.ogg', 70, FALSE, 8, falloff = 0.4)
@@ -671,10 +555,12 @@
 
 	if(!do_after(human, f_aiming_time, INTERRUPT_INCAPACITATED, NO_BUSY_ICON))
 		target.overlays -= lockon_icon
+		target.overlays -= lockon_direction_icon
 		qdel(laser_beam)
 		return
 
 	target.overlays -= lockon_icon
+	target.overlays -= lockon_direction_icon
 	qdel(laser_beam)
 
 	if(!check_can_use(target, TRUE) || target.is_dead())
@@ -686,7 +572,7 @@
 
 /datum/action/item_action/m6b_guided_shot/proc/check_can_use(mob/M)
 	var/mob/living/carbon/human/H = owner
-	var/obj/item/weapon/gun/launcher/m6b/rocket_launcher = holder_item
+	var/obj/item/weapon/gun/launcher/rocket/m6b/rocket_launcher = holder_item
 
 	if(!can_use_action())
 		return FALSE
@@ -700,6 +586,7 @@
 		return FALSE
 
 	var/obj/projectile/P = rocket_launcher.in_chamber
+	// TODO: Make the below logic only occur in certain circumstances. Check goggles, maybe? -Kaga
 	if(check_shot_is_blocked(H, M, P))
 		to_chat(H, SPAN_WARNING("[rocket_launcher] beeps as it stops tracking [target]."))
 		COOLDOWN_START(rocket_launcher, guided_shot_cooldown, rocket_launcher.guided_shot_cooldown_delay * 0.5)
