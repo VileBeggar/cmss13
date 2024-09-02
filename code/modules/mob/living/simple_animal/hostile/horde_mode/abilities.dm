@@ -7,7 +7,11 @@
 	COOLDOWN_DECLARE(ability_cooldown)
 
 /datum/action/horde_mode_action/proc/can_use_ability(mob/living/target)
-	if(!COOLDOWN_FINISHED(src, ability_cooldown) || owner.stat == DEAD || !prob(chance_to_activate) || (required_distance_to_target > 0 && !target) || (target && get_dist(owner, target) > required_distance_to_target) || HAS_TRAIT(owner, TRAIT_IMMOBILIZED))
+	if(!COOLDOWN_FINISHED(src, ability_cooldown) || !prob(chance_to_activate) || HAS_TRAIT(owner, TRAIT_IMMOBILIZED))
+		return FALSE
+	if(required_distance_to_target > 0 && !target)
+		return FALSE
+	if(target && get_dist(owner, target) > required_distance_to_target + 1)
 		return FALSE
 	return TRUE
 
@@ -345,9 +349,11 @@
 	///Mob's alpha level whe invisible
 	var/invisibility_alpha = 50
 
+
+/datum/action/horde_mode_action/invisibility/can_use_ability(mob/living/target)
+	return TRUE
+
 /datum/action/horde_mode_action/invisibility/use_ability(mob/living/target)
-	if(!can_use_ability(target))
-		return
 
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	if(get_dist(xeno, target) > 6)
@@ -370,10 +376,10 @@
 	///Whether the mob is currently fortified or not.
 	var/fortified = FALSE
 
-/datum/action/horde_mode_action/steelcrest_fortify/use_ability(mob/living/target)
-	if(!can_use_ability(target))
-		return
+/datum/action/horde_mode_action/steelcrest_fortify/can_use_ability(mob/living/target)
+	return TRUE
 
+/datum/action/horde_mode_action/steelcrest_fortify/use_ability(mob/living/target)
 	if(get_dist(owner, target) <= 4 && !fortified)
 		fortify()
 
@@ -384,13 +390,13 @@
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
 	fortified = !fortified
 	switch(fortified)
-		if(TRUE)
+		if(FALSE)
 			xeno.icon_state = "Steelcrest Defender Walking"
 			xeno.brute_damage_mod = 1
 			xeno.move_to_delay -= HORDE_MODE_SPEED_MOD_MEDIUM
 			xeno.status_flags |= CANSTUN
 			xeno.mob_size = MOB_SIZE_XENO
-		if(FALSE)
+		if(TRUE)
 			xeno.icon_state = "Steelcrest Defender Fortify"
 			xeno.brute_damage_mod = 0.66
 			xeno.move_to_delay += HORDE_MODE_SPEED_MOD_MEDIUM
@@ -550,7 +556,7 @@
 		for(var/mob/living/victim in range(xeno, 3))
 			if(xeno.body_position == LYING_DOWN)
 				break
-			if(xeno.hive.is_ally(victim))
+			if(xeno.hive.is_ally(victim) || victim.stat == DEAD)
 				continue
 			victim.apply_effect(0.5, WEAKEN)
 			victim.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower) * 0.25, BRUTE)
