@@ -154,7 +154,7 @@
 // HEALING PHEREOS
 
 /datum/action/horde_mode_action/heal
-	cooldown_length = 16 SECONDS
+	cooldown_length = 10 SECONDS
 	var/heal_strength = 0.2
 	var/heal_strength_human = 0.05
 	var/heal_range = 4
@@ -274,6 +274,7 @@
 /datum/action/horde_mode_action/toss_mob
 	ability_type = HORDE_MODE_ABILITY_PREATTACK
 	cooldown_length = 10 SECONDS
+	required_distance_to_target = 1
 	var/paralyze = FALSE
 	var/throw_distance = 4
 	var/damage_multiplier = 1
@@ -302,7 +303,7 @@
 		target.apply_effect(1, PARALYZE)
 		target.apply_effect(1, WEAKEN)
 
-// HEADSTAB
+// HEADBUTT
 /datum/action/horde_mode_action/toss_mob/headbutt
 	damage_multiplier = 0.33
 	throw_distance = 2
@@ -313,14 +314,15 @@
 
 // CLOTHESLINE
 /datum/action/horde_mode_action/toss_mob/clothesline
-	cooldown_length = 4 SECONDS
+	cooldown_length = 8 SECONDS
 	damage_multiplier = 0.66
 	throw_distance = 4
 
 /datum/action/horde_mode_action/toss_mob/clothesline/use_ability(mob/living/target)
 	. = ..()
-	owner.visible_message(SPAN_XENOWARNING("[owner] clotheslines [target]!"))
+	owner.visible_message(SPAN_XENOWARNING("[owner] clotheslines [target]! Their wounds seem to close up..."))
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	xeno.flick_attack_overlay(target, "slam")
 	xeno.health += xeno.maxHealth * 0.05
 	xeno.flick_heal_overlay(1 SECONDS, "#00B800")
 
@@ -351,18 +353,25 @@
 
 
 /datum/action/horde_mode_action/invisibility/can_use_ability(mob/living/target)
+	if(!target)
+		return FALSE
 	return TRUE
 
 /datum/action/horde_mode_action/invisibility/use_ability(mob/living/target)
 
 	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
+	//if we are really far away, start moving faster. we also have to stop moving for a brief moment, as speed is not updated until the pathfinding is done.
 	if(get_dist(xeno, target) > 6)
+		xeno.stop_moving()
 		xeno.move_to_delay = invisbility_speed
+		xeno.MoveToTarget()
 	else
-		xeno.move_to_delay = HORDE_MODE_SPEED_NORMAL
+		xeno.stop_moving()
+		xeno.move_to_delay = initial(xeno.move_to_delay)
+		xeno.MoveToTarget()
 
 	//once we're up close and personal, drop the cloak. otherwise keep being invisible
-	if(xeno.stat == DEAD || get_dist(xeno, target) <= 2)
+	if(xeno.stat == DEAD || get_dist(xeno, target) < 2)
 		xeno.alpha = initial(xeno.alpha)
 	else
 		xeno.alpha = invisibility_alpha
@@ -414,7 +423,6 @@
 	var/rush_length = 2 SECONDS
 	var/has_footstep = FALSE
 	var/footstep_sound = "alien_footstep_large"
-	var/timer_id = VV_NULL
 
 /datum/action/horde_mode_action/rush/use_ability(mob/living/target)
 	if(!can_use_ability(target))
@@ -429,7 +437,7 @@
 
 	var/outline_color = "#FF0000"
 	outline_color += num2text(70, 2, 16)
-	timer_id = addtimer(CALLBACK(src, PROC_REF(remove_rush), outline_color), rush_length, TIMER_STOPPABLE)
+	addtimer(CALLBACK(src, PROC_REF(remove_rush), outline_color), rush_length, TIMER_STOPPABLE)
 
 	if(has_footstep)
 		xeno.AddComponent(/datum/component/footstep, 2 , 35, 11, 4, footstep_sound)
@@ -454,41 +462,6 @@
 	xeno.transition_filter("outline_rush", list(size = 0, color = outline_color), 2 SECONDS, QUAD_EASING)
 	sleep(2 SECONDS)
 	xeno.remove_filter("outline_rush")
-
-
-// CHARGE
-
-/datum/action/horde_mode_action/rush/charge
-	cooldown_length = 6 SECONDS
-	has_footstep = TRUE
-	rush_length = 4 SECONDS
-	speed_mod = HORDE_MODE_SPEED_MOD_EXTREMELY_HIGH
-	var/stop_rush_on_hit = TRUE
-
-/datum/action/horde_mode_action/rush/charge/use_ability(mob/living/target)
-	. = ..()
-	RegisterSignal(owner, COMSIG_MOVABLE_MOVED, PROC_REF(handle_movement), override = TRUE)
-
-/datum/action/horde_mode_action/rush/charge/remove_rush(outline_color)
-	. = ..()
-	UnregisterSignal(owner, COMSIG_MOVABLE_MOVED)
-
-/datum/action/horde_mode_action/rush/charge/proc/handle_movement()
-	SIGNAL_HANDLER_DOES_SLEEP
-
-	var/mob/living/simple_animal/hostile/alien/horde_mode/xeno = owner
-	for(var/mob/living/nearby_mob in orange(1, xeno))
-		if(xeno.hive.is_ally(nearby_mob) || nearby_mob == DEAD)
-			continue
-		var/facing = get_dir(xeno, nearby_mob)
-		nearby_mob.apply_damage(rand(xeno.melee_damage_upper, xeno.melee_damage_lower), BRUTE)
-		playsound(nearby_mob, 'sound/weapons/alien_claw_block.ogg', 75, 1)
-		xeno.throw_mob(nearby_mob, facing, 4, SPEED_REALLY_FAST)
-		if(stop_rush_on_hit)
-			remove_rush()
-			deltimer(timer_id)
-			timer_id = null
-			break
 
 //--------------------------------
 // TREMOR

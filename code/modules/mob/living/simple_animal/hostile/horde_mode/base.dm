@@ -1,5 +1,6 @@
 #define WEED_HEAL_FACTOR 0.05
 #define OVERLAY_EFFECT_LAYER 8
+#define ABILITY_COOLDOWN_LENGTH 0.5 SECONDS
 
 /mob/living/simple_animal/hostile/alien/horde_mode
 	icon = 'icons/mob/xenos/drone.dmi'
@@ -27,12 +28,13 @@
 	var/datum/hive_status/hive
 	///Has the mob used a preattack ability?
 	var/preattack_move = FALSE
+
 	var/strain_icon_path
 	var/strain_icon_state
 	///Is the strain an overlay (drone gardener, healer...) or a full sprite?
 	var/strain_is_overlay = FALSE
 	///Reference to the icon overlay for strains. Mostly used for drone strains.
-	var/mutable_appearance/strain_overlay
+	var/atom/movable/vis_obj/strain_overlay
 	///List of all actions that the mob is supposed to have. Given during initialization.
 	var/list/base_actions = list()
 	///Temporary var for how many buildings the mob can build.
@@ -53,6 +55,9 @@
 	COOLDOWN_DECLARE(slash_cooldown)
 	///Cooldown dictating how long the mob has to wait before being able to use a ranged attack.
 	COOLDOWN_DECLARE(ranged_cooldown)
+	///Cooldown dictating how long the mob has to wait before being able to use another ability.
+	//this is used to stop xenos from immediately unleashing every single ability in one tick
+	COOLDOWN_DECLARE(ability_cooldown)
 
 //--------------------------------
 // INIT AND ICONS
@@ -62,19 +67,19 @@
 	langchat_height = icon_size
 	add_abilities()
 	if(strain_icon_state && strain_is_overlay)
-		strain_overlay = mutable_appearance(strain_icon_path, "[strain_icon_state] Walking")
-		overlays += strain_overlay
+		strain_overlay = new(null, src)
+		strain_overlay.icon = strain_icon_path
+		strain_overlay.icon_state = "[strain_icon_state] Walking"
+		vis_contents += strain_overlay
 	return ..()
 
 
-//some strains are overlays while others are full icons. we need to take both into account.
+//some strains are overlays while others are full icons (super wack). we need to take both into account.
 /mob/living/simple_animal/hostile/alien/horde_mode/update_transform(instant_update)
 	. = ..()
 
 	if(strain_icon_state)
 		if(strain_is_overlay)
-			overlays -= strain_overlay
-			strain_overlay.overlays.Cut()
 			if(stat == DEAD)
 				strain_overlay.icon_state = "[strain_icon_state] Dead"
 			else if(body_position == LYING_DOWN)
@@ -84,7 +89,6 @@
 					strain_overlay.icon_state = "[strain_icon_state] Knocked Down"
 			else
 				strain_overlay.icon_state = "[strain_icon_state] Walking"
-			overlays += strain_overlay
 
 		else
 
@@ -99,13 +103,13 @@
 				icon_state = "[strain_icon_state] Walking"
 
 /mob/living/simple_animal/hostile/alien/horde_mode/handle_icon()
-	if(strain_icon_state)
-		icon_state = "[strain_icon_state] Running"
-		icon_living = "[strain_icon_state] Running"
+	if(strain_icon_state && !strain_is_overlay)
+		icon_state = "[strain_icon_state] Walking"
+		icon_living = "[strain_icon_state] Walking"
 		icon_dead = "[strain_icon_state] Dead"
 	else
-		icon_state = "Normal [caste_name] Running"
-		icon_living = "Normal [caste_name] Running"
+		icon_state = "Normal [caste_name] Walking"
+		icon_living = "Normal [caste_name] Walking"
 		icon_dead = "Normal [caste_name] Dead"
 
 
@@ -145,13 +149,18 @@
 		give_action(src, action_path)
 
 /mob/living/simple_animal/hostile/alien/horde_mode/proc/handle_abilities(ability_type, passed_arg)
+	if(!COOLDOWN_FINISHED(src, ability_cooldown))
+		return
+
 	for(var/datum/action/horde_mode_action/action in actions)
 		if(stat == DEAD || body_position == LYING_DOWN || action.ability_type != ability_type || !action.can_use_ability(passed_arg))
 			continue
 
 		INVOKE_ASYNC(action, TYPE_PROC_REF(/datum/action/horde_mode_action, use_ability), passed_arg)
+		COOLDOWN_START(src, ability_cooldown, ABILITY_COOLDOWN_LENGTH)
 		if(ability_type == HORDE_MODE_ABILITY_PREATTACK)
 			preattack_move = TRUE
+		return
 
 //--------------------------------
 // ATTACKING
@@ -223,13 +232,31 @@
 	return ..()
 
 //--------------------------------
+// TARGET HANDLING
+
+//range is no longer a factor when it comes to losing targets.
+/mob/living/simple_animal/hostile/alien/horde_mode/AttackTarget()
+	stop_automated_movement = TRUE
+	if(!target_mob || SA_attackable(target_mob))
+		LoseTarget()
+		return
+	if(get_dist(src, target_mob) <= 1) //Attacking
+		AttackingTarget()
+		return TRUE
+
+//--------------------------------
 // MOVEMENT
 
 /mob/living/simple_animal/hostile/alien/horde_mode/MoveToTarget()
 	if(stat == DEAD || HAS_TRAIT(src, TRAIT_INCAPACITATED) || HAS_TRAIT(src, TRAIT_FLOORED) || HAS_TRAIT(src, TRAIT_IMMOBILIZED))
 		return
 
-	return ..()
+	stop_automated_movement = TRUE
+	if(!target_mob || SA_attackable(target_mob))
+		stance = HOSTILE_STANCE_IDLE
+	if(target_mob)
+		stance = HOSTILE_STANCE_ATTACKING
+		walk_to(src, target_mob, 0, move_to_delay)
 
 /mob/living/simple_animal/hostile/alien/horde_mode/stop_moving()
 	walk_to(src, 0)

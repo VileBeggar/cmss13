@@ -5,13 +5,14 @@
 	name = "Lurker"
 	desc = "A beefy, fast alien with sharp claws."
 	icon = 'icons/mob/xenos/lurker.dmi'
+	move_to_delay = HORDE_MODE_SPEED_FAST
 	melee_damage_upper = HORDE_MODE_DAMAGE_MEDIUM
 	melee_damage_lower = HORDE_MODE_DAMAGE_MEDIUM
 	base_actions = list(/datum/action/horde_mode_action/invisibility)
 
 // VAMPIRE
 /mob/living/simple_animal/hostile/alien/horde_mode/lurker/vampire
-	desc = "A fast alien with sharp claws, and a intense thirst for blood."
+	desc = "A fast alien with sharp claws, and an intense thirst for blood."
 	strain_icon_path = 'icons/mob/xenos/lurker.dmi'
 	strain_icon_state = "Vampire Lurker"
 	health = HORDE_MODE_HEALTH_LOW

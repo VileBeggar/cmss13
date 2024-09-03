@@ -22,7 +22,6 @@
 	melee_damage_lower = HORDE_MODE_DAMAGE_LOW
 
 	strain_icon_path = 'icons/mob/xenos/drone_strain_overlays.dmi'
-	strain_is_overlay = TRUE
 
 // HEALER
 /mob/living/simple_animal/hostile/alien/horde_mode/drone/healer
@@ -43,12 +42,11 @@
 	base_actions = list(/datum/action/horde_mode_action/plant_weeds/weak)
 
 	strain_icon_state = "Gardener Drone"
+	strain_is_overlay = TRUE
 
 /mob/living/simple_animal/hostile/alien/horde_mode/drone/gardener/Initialize()
 	. = ..()
-	strain_overlay.overlays.Cut()
-	strain_overlay.color = LIGHT_COLOR_LAVENDER
-	overlays += strain_overlay
+	strain_overlay.color = LIGHT_COLOR_GREEN
 
 //--------------------------------
 // RUNNER
