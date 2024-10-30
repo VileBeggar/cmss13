@@ -364,6 +364,9 @@
 					msg_admin_attack("[key_name(usr)] has thrown [key_name(M)] from [start_T_descriptor] with the target [end_T_descriptor] in [get_area(src)] ([src.loc.x],[src.loc.y],[src.loc.z]).", src.loc.x, src.loc.y, src.loc.z)
 			else
 				to_chat(src, SPAN_WARNING("You need a better grip!"))
+			if(isxeno(src) && grab_level == GRAB_CARRY)
+				var/mob/living/carbon/xenomorph/xeno = src
+				xeno.stop_pulling_thrown_mob(G.grabbed_thing)
 
 	else //real item in hand, not a grab
 		thrown_thing = I

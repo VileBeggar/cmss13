@@ -226,6 +226,21 @@
 	if(inherent_verbs)
 		add_verb(src, inherent_verbs)
 
+/mob/living/carbon/xenomorph/stop_pulling()
+	var/mob/living/pulled_mob = pulling
+	if(grab_level == GRAB_CARRY && !pulled_mob.ally_of_hivenumber(src.hivenumber) && pulled_mob.stat == CONSCIOUS)
+		pulled_mob.KnockDown(2)
+		playsound(pulled_mob, get_sfx("metalbang"), 50)
+		visible_message(SPAN_DANGER("[src] slams [pulled_mob] into the ground, stunning them briefly!"), SPAN_DANGER("We slam [pulling] into the ground, stunning them briefly!"), 5, CHAT_TYPE_FLUFF_ACTION)
+	return ..()
+
+/mob/living/carbon/xenomorph/proc/stop_pulling_thrown_mob(mob/living/thrown_mob)
+	grab_level = GRAB_PASSIVE //switch to passive grab to halt stop_pulling() from stunning twice.
+	if(thrown_mob.ally_of_hivenumber(src.hivenumber) || thrown_mob.stat != CONSCIOUS)
+		return
+
+	visible_message(SPAN_DANGER("[src] viciously tosses [thrown_mob], stunning them briefly!"), SPAN_DANGER("We viciously toss [thrown_mob], stunning them briefly!"), 5, CHAT_TYPE_FLUFF_ACTION)
+	thrown_mob.KnockDown(2)
 
 //Adds or removes a delay to movement based on your caste. If speed = 0 then it shouldn't do much.
 //Runners are -2, -4 is BLINDLINGLY FAST, +2 is fat-level

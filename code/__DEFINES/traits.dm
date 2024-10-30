@@ -163,6 +163,8 @@
 #define TRAIT_TEMPORARILY_MUTED "temporarily_muted"
 /// Mob wont get hit by stray projectiles
 #define TRAIT_NO_STRAY "trait_no_stray"
+/// Mob is being carried by a xenomorph
+#define TRAIT_CARRIED_BY_XENO "trait_carried_by_xeno"
 
 // SPECIES TRAITS
 /// Knowledge of Yautja technology

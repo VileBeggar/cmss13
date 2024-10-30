@@ -802,6 +802,8 @@
 	return EYE_PROTECTION_WELDING
 
 /mob/living/carbon/xenomorph/get_pull_miltiplier()
+	if(grab_level == GRAB_CARRY)
+		return 0
 	return pull_multiplier
 
 /mob/living/carbon/xenomorph/proc/set_faction(new_faction = FACTION_XENOMORPH)

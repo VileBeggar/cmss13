@@ -228,6 +228,10 @@
 	var/pulledby_is_strong = HAS_TRAIT(pulledby, TRAIT_SUPER_STRONG)
 	var/src_is_strong = HAS_TRAIT(src, TRAIT_SUPER_STRONG)
 
+	if(isxeno(pulledby) && pulledby.grab_level == GRAB_CARRY)
+		visible_message(SPAN_DANGER("[src] struggles to break free of [pulledby]'s grip!"), max_distance = 5)
+		client.next_movement = world.time + (10*(pulledby.grab_level + 1)) + client.move_delay
+		return
 	if(!pulledby.grab_level && (!pulledby_is_strong || src_is_strong)) // if passive grab, check if puller is stronger than src, and if not, break free
 		pulledby.stop_pulling()
 		return TRUE

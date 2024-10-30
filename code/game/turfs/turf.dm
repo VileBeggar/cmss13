@@ -264,10 +264,14 @@
 		if(forget == obstacle)
 			continue
 		A = obstacle
-		if (!istype(A) || !A.can_block_movement)
+		if(!istype(A) || !A.can_block_movement)
 			continue
+		if(isxeno(A))
+			var/mob/living/carbon/xenomorph/xeno = A
+			if(xeno.pulling == mover && xeno.grab_level == GRAB_CARRY)
+				continue
 		blocking_dir |= A.BlockedPassDirs(mover, fdir)
-		if ((!fd1 || blocking_dir & fd1) && (!fd2 || blocking_dir & fd2))
+		if((!fd1 || blocking_dir & fd1) && (!fd2 || blocking_dir & fd2))
 			if(!mover.Collide(A))
 				return FALSE
 
