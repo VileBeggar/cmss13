@@ -1,0 +1,67 @@
+@use '../base.scss';
+@use '../colors.scss';
+
+$small-text: 2vw;
+$medium-text: 2.5vw;
+$large-text: 3vw;
+
+.CellGenerator {
+  .Section {
+    .Section__title {
+      margin-top: 6px;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .Section__titleText {
+      font-weight: bold;
+      font-size: $large-text;
+    }
+  }
+
+  .RegularSpan {
+    font-size: $small-text;
+  }
+
+  .SubheaderSpan {
+    font-size: $medium-text;
+  }
+
+  .HeaderSpan {
+    font-size: $large-text;
+  }
+
+  .Flex {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding-top: 16px;
+    padding-bottom: 24px;
+
+    .Flex__item {
+      flex-basis: 40%;
+      padding-bottom: 6px;
+    }
+  }
+
+  .Gauge {
+    border: 2px solid #8fc1f3;
+    padding: 12px;
+  }
+
+  .Box {
+    color: red;
+  }
+
+  .GrowthGood {
+    font-size: $small-text;
+    color: lightseagreen;
+  }
+
+  .Divider {
+    padding-bottom: 12px;
+  }
+
+  .ProgressBar {
+    color: white;
+  }
+}
