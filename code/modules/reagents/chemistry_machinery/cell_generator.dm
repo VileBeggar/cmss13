@@ -21,7 +21,7 @@
 	var/status = STATUS_OFF
 	var/mob/living/carbon/occupant
 	var/obj/item/cell_sample/sample
-	var/obj/item/reagent_container/glass/beaker
+	var/obj/item/reagent_container/glass/beaker/beaker
 	var/growth_rate = 1
 
 /obj/structure/machinery/cell_generator/get_examine_text(mob/user)
@@ -40,6 +40,16 @@
 /obj/structure/machinery/cell_generator/ui_data(mob/user)
 	var/list/data = list()
 	data["status"] = status
+	data["growth_rate"] = growth_rate
+	if(beaker)
+		data["beakerInserted"] = TRUE
+		data["beaker"] = beaker.name
+		data["fluid_level_max"] = beaker.volume
+		data["fluid_level_cur"] = beaker.reagents.total_volume
+	if(sample)
+		data["sampleInserted"] = TRUE
+		data["sample"] = sample
+		data["sample_maturity"] = sample.maturity
 
 	return data
 
@@ -52,6 +62,7 @@
 /obj/item/cell_sample
 	name = "cell sample"
 	desc = "An unassuming tissue sample."
+	var/maturity = 0
 
 /obj/item/cell_sample/get_examine_text(mob/user)
 	. = ..()
