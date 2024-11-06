@@ -11,13 +11,11 @@ import {
 import { Window } from '../layouts';
 
 type Data = {
-  status: any;
+  status: string;
   growth_rate: number;
-  beakerInserted: boolean;
   beaker: string;
   fluid_level_max: number;
   fluid_level_cur: number;
-  sampleInserted: boolean;
   sample: string;
   sample_maturity: number;
 };
@@ -39,7 +37,14 @@ export const CellGenerator = (props) => {
               </span>
             </Flex.Item>
             <Flex.Item>
-              <Button fluid textAlign="center" icon="flask" fontSize="3vw">
+              <Button
+                fluid
+                textAlign="center"
+                icon="flask"
+                fontSize="3vw"
+                disabled={data.beaker ? false : true}
+                onClick={() => act('eject_beaker')}
+              >
                 EJECT
               </Button>
             </Flex.Item>
@@ -56,6 +61,8 @@ export const CellGenerator = (props) => {
                 textAlign="center"
                 icon="table-cells"
                 fontSize="3vw"
+                disabled={data.sample ? false : true}
+                onClick={() => act('eject_sample')}
               >
                 EJECT
               </Button>
@@ -131,7 +138,7 @@ export const CellGenerator = (props) => {
               <Divider />
               <Box textAlign="center">
                 <span className="SubheaderSpan">CYCLE STATUS:</span>
-                <span className="RegularSpan"> ...growing </span>
+                <span className="RegularSpan">{data.status}</span>
               </Box>
             </Section>
           </Flex.Item>

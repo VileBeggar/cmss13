@@ -22,7 +22,7 @@
 	var/mob/living/carbon/occupant
 	var/obj/item/cell_sample/sample
 	var/obj/item/reagent_container/glass/beaker/beaker
-	var/growth_rate = 1
+	var/growth_rate = GROWTH_RATE_NORMAL
 
 /obj/structure/machinery/cell_generator/get_examine_text(mob/user)
 	. = ..()
@@ -39,17 +39,19 @@
 
 /obj/structure/machinery/cell_generator/ui_data(mob/user)
 	var/list/data = list()
-	data["status"] = status
 	data["growth_rate"] = growth_rate
 	if(beaker)
-		data["beakerInserted"] = TRUE
 		data["beaker"] = beaker.name
 		data["fluid_level_max"] = beaker.volume
 		data["fluid_level_cur"] = beaker.reagents.total_volume
 	if(sample)
-		data["sampleInserted"] = TRUE
 		data["sample"] = sample
 		data["sample_maturity"] = sample.maturity
+	switch(status)
+		if(STATUS_OFF)
+			data["status"] = "off"
+		if(STATUS_ON)
+			data["status"] = "generating"
 
 	return data
 
@@ -58,6 +60,51 @@
 	if(!ui)
 		ui = new(user, src, "CellGenerator", name)
 		ui.open()
+
+/obj/structure/machinery/cell_generator/ui_act(action, list/params, datum/tgui/ui, datum/ui_state/state)
+	. = ..()
+	if(.)
+		return
+	switch(action)
+		if("eject_beaker")
+			eject_item(usr, beaker)
+			. = TRUE
+		if("eject_sample")
+			eject_item(usr, sample)
+			. = TRUE
+
+/obj/structure/machinery/cell_generator/proc/eject_item(mob/living/user, obj/item/item_to_eject)
+	if(item_to_eject)
+		item_to_eject.forceMove(loc)
+		if(user && Adjacent(user))
+			user.put_in_hands(item_to_eject)
+	else
+		item_to_eject = null
+	update_icon()
+	SStgui.update_uis(src)
+
+/obj/structure/machinery/cell_generator/attackby(obj/item/item_to_insert, mob/user)
+	if(istype(item, /obj/item/cell_sample) && user.drop_inv_item_to_loc(item_to_insert, src))
+		var/obj/item/old_sample = sample
+		sample = item_to_insert
+		swap_item(item_to_insert, user, old_sample)
+		return
+	if(istype(item, /obj/item/reagent_container/beaker) && user.drop_inv_item_to_loc(item_to_insert, src))
+		var/obj/item/old_beaker = beaker
+		beaker = item_to_insert
+		swap_item(item_to_insert, user, old_beaker)
+		return
+
+	return ..()
+
+/obj/structure/machinery/cell_generator/proc/swap_item(obj/item/item_to_insert, mob/user, obj/item/old_item)
+	if(old_item)
+		to_chat(user, SPAN_NOTICE("You swap out [old_item] for [item_to_insert]."))
+		user.put_in_hands(old_item)
+	else
+		to_chat(user, SPAN_NOTICE("You place [item_to_insert] into [src]."))
+	SStgui.update_uis(src)
+	return
 
 /obj/item/cell_sample
 	name = "cell sample"
