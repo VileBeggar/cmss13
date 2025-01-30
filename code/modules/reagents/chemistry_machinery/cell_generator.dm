@@ -84,12 +84,12 @@
 	SStgui.update_uis(src)
 
 /obj/structure/machinery/cell_generator/attackby(obj/item/item_to_insert, mob/user)
-	if(istype(item, /obj/item/cell_sample) && user.drop_inv_item_to_loc(item_to_insert, src))
+	if(istype(item_to_insert, /obj/item/cell_sample) && user.drop_inv_item_to_loc(item_to_insert, src))
 		var/obj/item/old_sample = sample
 		sample = item_to_insert
 		swap_item(item_to_insert, user, old_sample)
 		return
-	if(istype(item, /obj/item/reagent_container/beaker) && user.drop_inv_item_to_loc(item_to_insert, src))
+	if(istype(item_to_insert, /obj/item/reagent_container/beaker) && user.drop_inv_item_to_loc(item_to_insert, src))
 		var/obj/item/old_beaker = beaker
 		beaker = item_to_insert
 		swap_item(item_to_insert, user, old_beaker)
