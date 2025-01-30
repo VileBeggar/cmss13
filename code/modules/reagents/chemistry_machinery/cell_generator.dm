@@ -89,7 +89,7 @@
 		sample = item_to_insert
 		swap_item(item_to_insert, user, old_sample)
 		return
-	if(istype(item_to_insert, /obj/item/reagent_container/beaker) && user.drop_inv_item_to_loc(item_to_insert, src))
+	if(istype(item_to_insert, /obj/item/reagent_container/glass/beaker) && user.drop_inv_item_to_loc(item_to_insert, src))
 		var/obj/item/old_beaker = beaker
 		beaker = item_to_insert
 		swap_item(item_to_insert, user, old_beaker)
