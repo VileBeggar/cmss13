@@ -25,7 +25,7 @@ export const CellGenerator = (props) => {
   const fluidLevel = data.fluid_level_cur / data.fluid_level_max;
 
   return (
-    <Window width={800} height={500} theme="crtblue">
+    <Window width={800} height={600} theme="crtblue">
       <Window.Content scrollable className="CellGenerator">
         <Section title="CLONING VAT STATUS">
           <Flex direction="row" justify="space-around">
@@ -137,7 +137,7 @@ export const CellGenerator = (props) => {
               <br />
               <Divider />
               <Box textAlign="center">
-                <span className="SubheaderSpan">CYCLE STATUS:</span>
+                <span className="SubheaderSpan">CYCLE STATUS: </span>
                 <span className="RegularSpan">{data.status}</span>
               </Box>
             </Section>

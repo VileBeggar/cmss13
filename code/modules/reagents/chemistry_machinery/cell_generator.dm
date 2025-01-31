@@ -109,6 +109,8 @@
 /obj/item/cell_sample
 	name = "cell sample"
 	desc = "An unassuming tissue sample."
+	icon = 'icons/obj/items/seeds.dmi'
+	icon_state = "seed"
 	var/maturity = 0
 
 /obj/item/cell_sample/get_examine_text(mob/user)
