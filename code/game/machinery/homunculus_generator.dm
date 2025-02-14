@@ -45,20 +45,37 @@
 /obj/structure/machinery/homunculus_generator/proc/toggle_cycle()
 	if(!sample)
 		return
-	if(status == STATUS_OFF)
-		status = STATUS_ON
-		START_PROCESSING(SSobj, src)
+	if(status == STATUS_ON)
+		stop_processing()
 	else
-		status = STATUS_OFF
-		STOP_PROCESSING(SSobj, src)
+		start_processing()
 
 /obj/structure/machinery/homunculus_generator/process()
 	if(beaker.reagents.total_volume <= 0)
-		STOP_PROCESSING(SSobj, src)
-		status = STATUS_OFF
+		stop_processing()
+		return
+	if(sample.growth >= CELL_GROWTH_GOAL)
+		finish_processing()
+		return
 
-	sample.growth += 1 SECONDS * growth_rate / 2
-	beaker.reagents.remove_all_type(/datum/reagent, 2.5, 0, 1)
+	calculate_growth_rate()
+	sample.growth += 1 SECONDS * max(1, growth_rate / 2)
+	beaker.reagents.remove_all_type(/datum/reagent, 1, 0, 1)
+
+/obj/structure/machinery/homunculus_generator/stop_processing()
+	playsound(src, 'sound/machines/terminal_off.ogg')
+	STOP_PROCESSING(SSobj, src)
+	status = STATUS_OFF
+
+/obj/structure/machinery/homunculus_generator/start_processing()
+	playsound(src, 'sound/machines/terminal_on.ogg')
+	START_PROCESSING(SSobj, src)
+	status = STATUS_ON
+
+/obj/structure/machinery/homunculus_generator/proc/finish_processing()
+	playsound(src, 'sound/machines/ping.ogg')
+	stop_processing()
+	visible_message(SPAN_NOTICE("[src] pings as it finishes the last stages of tissue generation."))
 
 /obj/structure/machinery/homunculus_generator/proc/eject_item(mob/living/user, obj/item/item_to_eject)
 	item_to_eject.forceMove(loc)
@@ -97,17 +114,27 @@
 		ui.open()
 
 /obj/structure/machinery/homunculus_generator/ui_data(mob/user)
-	var/list/data = list()
+	. = ..()
+
+	.["beaker"] = null
 	if(beaker)
-		data["beaker"] = beaker.name
-		data["beaker_vol_max"] = beaker.volume
-		data["beaker_vol_cur"] = beaker.reagents.total_volume
+		.["beaker"] = list(
+			"name" = beaker.name,
+			"vol_cur" = beaker.reagents.total_volume,
+			"vol_max" = beaker.volume
+		)
+
+	.["sample"] = null
 	if(sample)
-		data["sample"] = sample.name
-		data["sample_growth"] = sample.growth
-	data["growth_rate"] = growth_rate
-	data["growth_time"] = calculate_growth_time()
-	return data
+		.["sample"] = list(
+			"name" = sample.name,
+			"growth" = sample.growth
+		)
+
+	.["growth_rate"] = growth_rate
+	.["growth_time"] = calculate_growth_time()
+	.["growth_goal"] = CELL_GROWTH_GOAL
+	.["status"] = status
 
 /obj/structure/machinery/homunculus_generator/proc/calculate_growth_rate()
 	if(!beaker)
@@ -150,3 +177,7 @@
 	. = ..()
 	if(skillcheck(user, SKILL_RESEARCH, SKILL_RESEARCH_TRAINED))
 		. += SPAN_NOTICE("You could use this tissue sample to generate a homunculus with the cell generator.")
+
+#undef CELL_GROWTH_GOAL
+#undef STATUS_ON
+#undef STATUS_OFF

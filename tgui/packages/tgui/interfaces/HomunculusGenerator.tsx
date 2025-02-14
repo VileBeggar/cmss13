@@ -12,14 +12,20 @@ import {
 import { Window } from '../layouts';
 
 type Data = {
-  beaker: string;
-  beaker_vol_max: number;
-  beaker_vol_cur: number;
+  beaker?: {
+    name: string;
+    vol_cur: number;
+    vol_max: number;
+  };
+  sample?: {
+    name: string;
+    growth: number;
+  };
   growth_rate: number;
-  growth_time: string;
-  sample: string;
+  growth_time: number;
+  growth_goal: number;
+  status: number;
 };
-const { act, data } = useBackend<Data>();
 
 export const HomunculusGenerator = (props) => {
   return (
@@ -33,6 +39,8 @@ export const HomunculusGenerator = (props) => {
 };
 
 const ItemPanel = (props) => {
+  const { act, data } = useBackend<Data>();
+  const { beaker, sample } = data;
   return (
     <Section title="INFORMATION">
       <Flex direction="row" wrap="wrap">
@@ -41,7 +49,7 @@ const ItemPanel = (props) => {
         </Flex.Item>
         <Divider hidden vertical />
         <Flex.Item grow={0.9}>
-          <Box>HOMUNCULUS SAMPLE: {data.sample ? `${data.sample}` : 'N/A'}</Box>
+          <Box>TISSUE SAMPLE: {sample ? sample!.name : 'N/A'}</Box>
         </Flex.Item>
         <Flex.Item>
           <Button
@@ -58,7 +66,7 @@ const ItemPanel = (props) => {
         </Flex.Item>
         <Divider hidden vertical />
         <Flex.Item grow={0.9}>
-          <Box>NUTRIENT BEAKER: {data.beaker ? `${data.beaker}` : 'N/A'}</Box>
+          <Box>NUTRIENT BEAKER: {beaker ? beaker!.name : 'N/A'}</Box>
         </Flex.Item>
         <Flex.Item>
           <Button
@@ -75,7 +83,12 @@ const ItemPanel = (props) => {
 };
 
 const StatusPanel = (props) => {
-  const fluidLevel = data.beaker_vol_cur / data.beaker_vol_max;
+  const { act, data } = useBackend<Data>();
+  const { beaker, growth_rate, growth_time, growth_goal, status, sample } =
+    data;
+  const fluidLevel = beaker ? beaker!.vol_cur / beaker!.vol_max : 0;
+  const growthLevel = sample ? sample!.growth / growth_goal : 0;
+  const growthPercentage = Math.round(growthLevel * 100);
   return (
     <Flex direction="row" justify="space-between">
       <Flex.Item width="50%">
@@ -93,8 +106,7 @@ const StatusPanel = (props) => {
                   bad: [-Infinity, 0.25],
                 }}
               >
-                {data.beaker ? data.beaker_vol_cur : 0}u /{' '}
-                {data.beaker ? data.beaker_vol_max : 0}u
+                {beaker ? beaker.vol_cur : 0}u / {beaker ? beaker.vol_max : 0}u
               </ProgressBar>
             </Flex.Item>
             <Divider hidden vertical />
@@ -103,15 +115,18 @@ const StatusPanel = (props) => {
                 <Icon name="person" /> MATURITY:
               </Box>
 
-              <ProgressBar value={0.5}>50/50</ProgressBar>
+              <ProgressBar value={growthLevel}>
+                {' '}
+                {growthPercentage}%
+              </ProgressBar>
             </Flex.Item>
           </Flex>
           <Divider />
           <Flex justify="space-between">
             <Flex.Item>
               <Box>
-                GROWTH RATE: <GrowthRateText /> ({data.growth_rate}){' '}
-                <Divider hidden /> CYCLE FINISH IN: {data.growth_time}
+                GROWTH RATE: <GrowthRateText /> ({growth_rate}){' '}
+                <Divider hidden /> CYCLE FINISH IN: {growth_time}
               </Box>
             </Flex.Item>
             <Tooltip
@@ -125,6 +140,8 @@ const StatusPanel = (props) => {
               </Flex.Item>
             </Tooltip>
           </Flex>
+          <Divider />
+          <Box textAlign="center">CYCLE STATUS: {status ? 'ON' : 'OFF'}</Box>
         </Section>
       </Flex.Item>
 
@@ -136,12 +153,13 @@ const StatusPanel = (props) => {
               disabled={data.sample ? false : true}
               onClick={() => act('toggle_cycle')}
             >
-              START GENERATIVE CYCLE
+              {status ? 'STOP GENERATIVE CYCLE' : 'START GENERATIVE CYCLE'}
             </Button>
           </Flex.Item>
           <Flex.Item>
             <Button fluid>EJECT OCCUPANT</Button>
           </Flex.Item>
+          <Divider />
         </Section>
       </Flex.Item>
     </Flex>
@@ -153,6 +171,7 @@ const FlexLineBreak = (props) => {
 };
 
 const GrowthRateText = (props) => {
+  const { act, data } = useBackend<Data>();
   if (data.growth_rate === 0) {
     return 'NONE';
   }
