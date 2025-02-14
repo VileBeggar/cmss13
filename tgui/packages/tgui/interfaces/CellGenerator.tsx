@@ -18,23 +18,49 @@ type Data = {
   fluid_level_cur: number;
   sample: string;
   sample_maturity: number;
+  occupant: string;
 };
 
 export const CellGenerator = (props) => {
   const { act, data } = useBackend<Data>();
   const fluidLevel = data.fluid_level_cur / data.fluid_level_max;
+  const growthRateSpan = function () {
+    let textSpan;
+    let message;
+    switch (data.growth_rate) {
+      default:
+        textSpan = 'GrowthSlow';
+        message = 'NON';
+        break;
+      case 1:
+        textSpan = 'GrowthSlow';
+        message = 'NON1';
+        break;
+      case 2:
+        textSpan = 'GrowthNormal';
+        message = 'NON2';
+        break;
+      case 3:
+        textSpan = 'GrowthGood';
+        message = 'NON3';
+
+        return 'das';
+    }
+  };
 
   return (
-    <Window width={800} height={600} theme="crtblue">
+    <Window width={900} height={650} theme="crtblue">
       <Window.Content scrollable className="CellGenerator">
         <Section title="CLONING VAT STATUS">
           <Flex direction="row" justify="space-around">
             <Flex.Item>
-              <span className="HeaderSpan">NUTRIENT BEAKER:</span>
+              <Box inline className="HeaderSpan">
+                NUTRIENT BEAKER:
+              </Box>
               <br />
-              <span className="RegularSpan">
+              <Box inline className="RegularSpan">
                 {data.beaker ? `${data.beaker}` : 'N/A'}
-              </span>
+              </Box>
             </Flex.Item>
             <Flex.Item>
               <Button
@@ -49,11 +75,13 @@ export const CellGenerator = (props) => {
               </Button>
             </Flex.Item>
             <Flex.Item>
-              <span className="HeaderSpan">CELL SAMPLE:</span>
+              <Box inline className="HeaderSpan">
+                CELL SAMPLE:
+              </Box>
               <br />
-              <span className="RegularSpan">
+              <Box inline className="RegularSpan">
                 {data.sample ? 'present' : 'N/A'}
-              </span>
+              </Box>
             </Flex.Item>
             <Flex.Item>
               <Button
@@ -79,12 +107,19 @@ export const CellGenerator = (props) => {
                   icon="hourglass-start"
                   fontSize="2.5vw"
                   color="green"
+                  disabled={data.sample ? false : true}
                 >
                   START GROWTH CYCLE
                 </Button>
               </Flex.Item>
               <Flex.Item>
-                <Button fluid icon="door-open" fontSize="2.5vw" color="red">
+                <Button
+                  fluid
+                  icon="door-open"
+                  fontSize="2.5vw"
+                  color="red"
+                  disabled={data.occupant ? false : true}
+                >
                   EJECT VAT CONTENTS
                 </Button>
               </Flex.Item>
@@ -92,11 +127,14 @@ export const CellGenerator = (props) => {
           </Flex.Item>
 
           <Flex.Item grow={2.5}>
-            <Section title="VAT CONDITIONS">
+            <Section title="VAT CONDITIONS" mx={6}>
               <Flex justify="space-around">
                 <Flex.Item textAlign="Center" className="Gauge">
                   <Icon name="person" size={1.5} />
-                  <span className="SubheaderSpan"> MATURITY:</span>
+                  <Box inline className="SubheaderSpan">
+                    {' '}
+                    MATURITY:
+                  </Box>
                   <ProgressBar
                     width={14}
                     value={
@@ -114,7 +152,10 @@ export const CellGenerator = (props) => {
                 </Flex.Item>
                 <Flex.Item textAlign="Center" className="Gauge">
                   <Icon name="temperature-quarter" size={1.5} />
-                  <span className="SubheaderSpan"> FLUID LEVEL:</span>
+                  <Box inline className="SubheaderSpan">
+                    {' '}
+                    FLUIDS:
+                  </Box>
                   <ProgressBar
                     width={14}
                     value={fluidLevel}
@@ -124,21 +165,28 @@ export const CellGenerator = (props) => {
                       bad: [-Infinity, 0.25],
                     }}
                   >
-                    {data.beaker ? data.fluid_level_cur : 0}u/
+                    {data.beaker ? data.fluid_level_cur : 0}u /{' '}
                     {data.beaker ? data.fluid_level_max : 0}u
                   </ProgressBar>
                 </Flex.Item>
               </Flex>
               <Box textAlign="center">
                 <Icon name="arrow-up" size={1.5} />
-                <span className="SubheaderSpan"> GROWTH SPEED:</span>
-                <span className="GrowthGood"> nominal</span>
+                <Box inline className="SubheaderSpan">
+                  {' '}
+                  GROWTH SPEED:
+                </Box>
+                aSbcs
               </Box>
               <br />
               <Divider />
               <Box textAlign="center">
-                <span className="SubheaderSpan">CYCLE STATUS: </span>
-                <span className="RegularSpan">{data.status}</span>
+                <Box inline className="SubheaderSpan">
+                  CYCLE STATUS:{' '}
+                </Box>
+                <Box inline className="RegularSpan">
+                  {data.status}
+                </Box>
               </Box>
             </Section>
           </Flex.Item>

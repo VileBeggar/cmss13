@@ -40,6 +40,8 @@
 /obj/structure/machinery/cell_generator/ui_data(mob/user)
 	var/list/data = list()
 	data["growth_rate"] = growth_rate
+	if(occupant)
+		data["occupant"] = occupant
 	if(beaker)
 		data["beaker"] = beaker.name
 		data["fluid_level_max"] = beaker.volume
@@ -69,17 +71,16 @@
 		if("eject_beaker")
 			eject_item(usr, beaker)
 			. = TRUE
+			beaker = null
 		if("eject_sample")
 			eject_item(usr, sample)
 			. = TRUE
+			sample = null
 
 /obj/structure/machinery/cell_generator/proc/eject_item(mob/living/user, obj/item/item_to_eject)
-	if(item_to_eject)
-		item_to_eject.forceMove(loc)
-		if(user && Adjacent(user))
-			user.put_in_hands(item_to_eject)
-	else
-		item_to_eject = null
+	item_to_eject.forceMove(loc)
+	if(user && Adjacent(user))
+		user.put_in_hands(item_to_eject)
 	update_icon()
 	SStgui.update_uis(src)
 
@@ -104,7 +105,6 @@
 	else
 		to_chat(user, SPAN_NOTICE("You place [item_to_insert] into [src]."))
 	SStgui.update_uis(src)
-	return
 
 /obj/item/cell_sample
 	name = "cell sample"
