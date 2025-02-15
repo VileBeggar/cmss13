@@ -1511,10 +1511,11 @@
 /mob/living/carbon/human/monkey/Initialize(mapload)
 	. = ..(mapload, new_species = "Monkey")
 
-
 /mob/living/carbon/human/farwa/Initialize(mapload)
 	. = ..(mapload, new_species = "Farwa")
 
+/mob/living/carbon/human/homunculus/Initialize(mapload)
+	. = ..(mapload, new_species = "Homunculus")
 
 /mob/living/carbon/human/neaera/Initialize(mapload)
 	. = ..(mapload, new_species = "Neaera")

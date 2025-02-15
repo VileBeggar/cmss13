@@ -1,6 +1,11 @@
-#define CELL_GROWTH_GOAL 5 MINUTES
+#define CELL_GROWTH_EMBRYO 1.5 MINUTES
+#define CELL_GROWTH_HALF_GROWN 3 MINUTES
+#define CELL_GROWTH_FULL_GROWN 5 MINUTES
 #define STATUS_ON 1
 #define STATUS_OFF 0
+
+#define STOP_MANUAL 1
+#define STOP_NO_FLUID 2
 
 /obj/structure/machinery/homunculus_generator
 	name = "homunculus generator"
@@ -46,26 +51,48 @@
 	if(!sample)
 		return
 	if(status == STATUS_ON)
-		stop_processing()
+		stop_processing(STOP_MANUAL)
 	else
 		start_processing()
 
+/obj/structure/machinery/homunculus_generator/update_icon()
+	if(!sample && !occupant)
+		icon_state = "cell"
+		return
+	switch(sample.growth)
+		if(0 to CELL_GROWTH_EMBRYO)
+			icon_state = "cell-on-empty"
+		if(CELL_GROWTH_EMBRYO to CELL_GROWTH_HALF_GROWN)
+			icon_state = "cell-on-occupied-embryo"
+		if(CELL_GROWTH_HALF_GROWN to CELL_GROWTH_FULL_GROWN)
+			icon_state = "cell-on-occupied-stage-2"
+		else
+			icon_state = "cell-on-occupied-fullgrown"
+
 /obj/structure/machinery/homunculus_generator/process()
 	if(beaker.reagents.total_volume <= 0)
-		stop_processing()
+		stop_processing(STOP_NO_FLUID)
 		return
-	if(sample.growth >= CELL_GROWTH_GOAL)
+	if(sample.growth >= CELL_GROWTH_FULL_GROWN)
 		finish_processing()
 		return
 
 	calculate_growth_rate()
+	update_icon()
 	sample.growth += 1 SECONDS * max(1, growth_rate / 2)
-	beaker.reagents.remove_all_type(/datum/reagent, 1, 0, 1)
+	beaker.reagents.remove_all_type(/datum/reagent, 0.5, 0, 1)
 
-/obj/structure/machinery/homunculus_generator/stop_processing()
-	playsound(src, 'sound/machines/terminal_off.ogg')
+/obj/structure/machinery/homunculus_generator/stop_processing(reason)
 	STOP_PROCESSING(SSobj, src)
 	status = STATUS_OFF
+
+	switch(reason)
+		if(STOP_NO_FLUID)
+			playsound(src, 'sound/machines/twobeep.ogg')
+			visible_message(SPAN_WARNING("[src] lets out a beep, notifying that its nutrient beaker has run dry."))
+		if(STOP_MANUAL)
+			playsound(src, 'sound/machines/terminal_off.ogg')
+			visible_message(SPAN_NOTICE("[src] lets out a soft wheer. The growth cycle has now stopped."))
 
 /obj/structure/machinery/homunculus_generator/start_processing()
 	playsound(src, 'sound/machines/terminal_on.ogg')
@@ -133,7 +160,7 @@
 
 	.["growth_rate"] = growth_rate
 	.["growth_time"] = calculate_growth_time()
-	.["growth_goal"] = CELL_GROWTH_GOAL
+	.["growth_goal"] = CELL_GROWTH_FULL_GROWN
 	.["status"] = status
 
 /obj/structure/machinery/homunculus_generator/proc/calculate_growth_rate()
@@ -162,15 +189,15 @@
 	if(!growth_rate)
 		return "N/A"
 
-	return duration2text_sec((CELL_GROWTH_GOAL - sample.growth) / (growth_rate / 2))
+	return duration2text_sec((CELL_GROWTH_FULL_GROWN - sample.growth) / (growth_rate / 2))
 
 /// CELL SAMPLE ITEM
 ///------------------
 /obj/item/cell_sample
 	name = "cell sample"
 	desc = "An unassuming tissue sample."
-	icon = 'icons/obj/items/seeds.dmi'
-	icon_state = "seed"
+	icon = 'icons/obj/items/homunculus.dmi'
+	icon_state = "cell_sample"
 	var/growth = 0
 
 /obj/item/cell_sample/get_examine_text(mob/user)
@@ -178,6 +205,17 @@
 	if(skillcheck(user, SKILL_RESEARCH, SKILL_RESEARCH_TRAINED))
 		. += SPAN_NOTICE("You could use this tissue sample to generate a homunculus with the cell generator.")
 
-#undef CELL_GROWTH_GOAL
+/obj/item/cell_sample/proc/update_growth()
+	switch(growth)
+		if(-INFINITY to CELL_GROWTH_EMBRYO)
+			icon_state = "cell_sample"
+		if(CELL_GROWTH_EMBRYO to CELL_GROWTH_HALF_GROWN)
+			icon_state = "embryo"
+		if(CELL_GROWTH_HALF_GROWN to CELL_GROWTH_FULL_GROWN)
+			icon_state = "half_grown"
+		else
+			icon_state = "full_grown"
+
+#undef CELL_GROWTH_FULL_GROWN
 #undef STATUS_ON
 #undef STATUS_OFF
