@@ -79,6 +79,7 @@
 
 	calculate_growth_rate()
 	update_icon()
+	sample.update_growth()
 	sample.growth += 1 SECONDS * max(1, growth_rate / 2)
 	beaker.reagents.remove_all_type(/datum/reagent, 0.5, 0, 1)
 
@@ -186,7 +187,7 @@
 	growth_rate = min(max_hemogenic_lvl + max_nutritious_lvl + max_hypergenetic_lvl, 10)
 
 /obj/structure/machinery/homunculus_generator/proc/calculate_growth_time()
-	if(!growth_rate)
+	if(!growth_rate || !sample)
 		return "N/A"
 
 	return duration2text_sec((CELL_GROWTH_FULL_GROWN - sample.growth) / (growth_rate / 2))

@@ -176,15 +176,15 @@ const GrowthRateText = (props) => {
     return 'NONE';
   }
 
-  if (data.growth_rate > 0 && data.growth_rate < 3) {
+  if (data.growth_rate > 0 && data.growth_rate <= 3) {
     return 'SLOW';
   }
 
-  if (data.growth_rate > 3 && data.growth_rate < 5) {
+  if (data.growth_rate > 3 && data.growth_rate <= 5) {
     return 'MODERATE';
   }
 
-  if (data.growth_rate > 5 && data.growth_rate < 8) {
+  if (data.growth_rate > 5 && data.growth_rate <= 8) {
     return 'FAST';
   }
 

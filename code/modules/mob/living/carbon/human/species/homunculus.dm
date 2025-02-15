@@ -12,6 +12,7 @@
 	flags = HAS_HARDCRIT
 	mob_flags = NO_FLAGS
 	can_emote = FALSE
+	pain_type = /datum/pain/zombie
 	death_message = "seizes up and falls limp."
 
 	has_organ = list(
@@ -36,5 +37,7 @@
 		var/organ_type = has_organ[organ]
 		H.internal_organs_by_name[organ] = new organ_type(H)
 
-	H.update_leg_status()
-	H.update_transform(instant_update = TRUE)
+/datum/species/human/homunculus/handle_post_spawn(mob/living/carbon/human/H)
+	H.mobility_flags &= ~MOBILITY_STAND
+	H.on_floored_start()
+	return ..()
