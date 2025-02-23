@@ -70,7 +70,7 @@
 			icon_state = "cell-on-occupied-fullgrown"
 
 /obj/structure/machinery/homunculus_generator/process()
-	if(beaker.reagents.total_volume <= 0)
+	if(!beaker || beaker.reagents.total_volume <= 0)
 		stop_processing(STOP_NO_FLUID)
 		return
 	if(sample.growth >= CELL_GROWTH_FULL_GROWN)
@@ -205,7 +205,7 @@
 	. = ..()
 	if(skillcheck(user, SKILL_RESEARCH, SKILL_RESEARCH_TRAINED))
 		. += SPAN_NOTICE("You could use this tissue sample to generate a homunculus with the cell generator.")
-
+//embryo squish
 /obj/item/cell_sample/proc/update_growth()
 	switch(growth)
 		if(-INFINITY to CELL_GROWTH_EMBRYO)
