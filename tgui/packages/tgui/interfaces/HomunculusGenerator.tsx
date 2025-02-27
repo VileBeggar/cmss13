@@ -25,6 +25,7 @@ type Data = {
   growth_time: number;
   growth_goal: number;
   status: number;
+  occupant: boolean;
 };
 
 export const HomunculusGenerator = (props) => {
@@ -84,11 +85,18 @@ const ItemPanel = (props) => {
 
 const StatusPanel = (props) => {
   const { act, data } = useBackend<Data>();
-  const { beaker, growth_rate, growth_time, growth_goal, status, sample } =
-    data;
+  const {
+    beaker,
+    growth_rate,
+    growth_time,
+    growth_goal,
+    status,
+    sample,
+    occupant,
+  } = data;
   const fluidLevel = beaker ? beaker!.vol_cur / beaker!.vol_max : 0;
   const growthLevel = sample ? sample!.growth / growth_goal : 0;
-  const growthPercentage = Math.round(growthLevel * 100);
+  const growthPercentage = occupant ? 100 : Math.round(growthLevel * 100);
   return (
     <Flex direction="row" justify="space-between">
       <Flex.Item width="50%">
@@ -150,14 +158,20 @@ const StatusPanel = (props) => {
           <Flex.Item>
             <Button
               fluid
-              disabled={data.sample ? false : true}
+              disabled={sample ? false : true}
               onClick={() => act('toggle_cycle')}
             >
               {status ? 'STOP GENERATIVE CYCLE' : 'START GENERATIVE CYCLE'}
             </Button>
           </Flex.Item>
           <Flex.Item>
-            <Button fluid>EJECT OCCUPANT</Button>
+            <Button
+              fluid
+              disabled={occupant ? false : true}
+              onClick={() => act('eject_occupant')}
+            >
+              EJECT OCCUPANT
+            </Button>
           </Flex.Item>
           <Divider />
         </Section>

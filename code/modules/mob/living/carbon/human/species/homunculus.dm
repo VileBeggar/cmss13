@@ -10,7 +10,7 @@
 	deform = 'icons/mob/humans/species/r_homunculi.dmi'
 
 	flags = HAS_HARDCRIT
-	mob_flags = NO_FLAGS
+	mob_flags = NO_BREATHE
 	can_emote = FALSE
 	pain_type = /datum/pain/zombie
 	death_message = "seizes up and falls limp."
@@ -27,7 +27,6 @@
 	QDEL_LIST(H.internal_organs)
 	H.internal_organs_by_name.Cut()
 
-	//This is a basic humanoid limb setup.
 	var/obj/limb/chest/C = new(H, null, H)
 	H.limbs += C
 	var/obj/limb/groin/G = new(H, C, H)
@@ -38,6 +37,4 @@
 		H.internal_organs_by_name[organ] = new organ_type(H)
 
 /datum/species/human/homunculus/handle_post_spawn(mob/living/carbon/human/H)
-	H.mobility_flags &= ~MOBILITY_STAND
-	H.on_floored_start()
 	return ..()
