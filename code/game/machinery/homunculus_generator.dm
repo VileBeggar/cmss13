@@ -64,10 +64,10 @@
 			occupant.forceMove(get_step(loc, WEST))
 		else
 			occupant.forceMove(get_step(loc, SOUTH))
-	visible_message(SPAN_NOTICE("[occupant] falls out of [src]."))
+	visible_message(SPAN_NOTICE("[src] hisses as [occupant] falls out."))
 	occupant = null
-	update_icon()
 	playsound(src, 'sound/machines/hydraulics_3.ogg')
+	update_icon()
 
 /obj/structure/machinery/homunculus_generator/proc/toggle_cycle()
 	if(occupant)
@@ -147,23 +147,23 @@
 	item_to_eject.forceMove(loc)
 	if(user && Adjacent(user))
 		user.put_in_hands(item_to_eject)
-	update_icon()
 	SStgui.update_uis(src)
+	update_icon()
 
 /obj/structure/machinery/homunculus_generator/attackby(obj/item/item_to_insert, mob/user)
-	if(!user.drop_inv_item_to_loc(item_to_insert, src))
-		return
-
 	if(istype(item_to_insert, /obj/item/cell_sample))
 		var/obj/item/cell_sample/sample_to_insert = item_to_insert
 		if(sample_to_insert.growth >= CELL_GROWTH_EMBRYO)
 			to_chat(user, SPAN_WARNING("[src] only accepts untainted cell samples!"))
 			return
+		if(!user.drop_inv_item_to_loc(sample_to_insert, src))
+			return
 		var/obj/item/old_sample = sample
 		sample = sample_to_insert
 		swap_item(sample_to_insert, user, old_sample)
+		return
 
-	else if(istype(item_to_insert, /obj/item/reagent_container/glass/beaker))
+	if(istype(item_to_insert, /obj/item/reagent_container/glass/beaker) && user.drop_inv_item_to_loc(sample_to_insert, src))
 		var/obj/item/old_beaker = beaker
 		beaker = item_to_insert
 		swap_item(item_to_insert, user, old_beaker)
@@ -248,7 +248,7 @@
 
 /obj/item/cell_sample/get_examine_text(mob/user)
 	. = ..()
-	if(skillcheck(user, SKILL_RESEARCH, SKILL_RESEARCH_TRAINED) && growth < CELL_GROWTH_HALF_GROWN)
+	if(skillcheck(user, SKILL_RESEARCH, SKILL_RESEARCH_TRAINED) && growth < CELL_GROWTH_EMBRYO)
 		. += SPAN_NOTICE("You could use this tissue sample to generate a homunculus with the cell generator.")
 //embryo squish
 /obj/item/cell_sample/proc/update_growth()

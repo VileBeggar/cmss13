@@ -1,0 +1,19 @@
+@use '../base.scss';
+@use '../colors.scss';
+@use '../functions.scss' as *;
+
+$small-text: 2vw;
+$large-text: 3vw;
+
+.Section {
+  box-sizing: content-box;
+
+  .Section__title {
+    font-size: $large-text;
+  }
+
+  .Section__titleText {
+    font-weight: bold;
+    font-size: $large-text;
+  }
+}
